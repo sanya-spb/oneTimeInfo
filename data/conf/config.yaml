@@ -1,6 +1,9 @@
 # Output of detailed debugging information (default: false)
 # debug: false
 
+# secret key
+secret_key: "mySecretKey-128103033"
+
 # listen addr:port (default: ":80")
 listen: ":8181"
 

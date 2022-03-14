@@ -16,6 +16,7 @@ type Config struct {
 	ConfigFile string
 	Debug      bool   `yaml:"debug"`
 	Listen     string `yaml:"listen"`
+	SecretKey  string `yaml:"secret_key"`
 	LogAccess  string `yaml:"log_access"`
 	LogErrors  string `yaml:"log_errors"`
 }
@@ -47,6 +48,7 @@ func (c *Config) loadConfFile(path string) error {
 func NewConfig() *Config {
 	var result *Config = new(Config)
 	flag.StringVar(&result.ConfigFile, "config", GetEnv("CONFIG", ""), "Configuration settings file")
+	flag.StringVar(&result.SecretKey, "secret", GetEnv("SECRET", ""), "Secret key")
 	flag.BoolVar(&result.Debug, "debug", GetEnvBool("DEBUG", false), "Output of detailed debugging information")
 	flag.StringVar(&result.Listen, "listen", GetEnv("LISTEN", ":80"), "listen addr:port")
 	flag.StringVar(&result.LogAccess, "log-access", GetEnv("LOG_ACCESS", "./data/logs/access.log"), "Log file")

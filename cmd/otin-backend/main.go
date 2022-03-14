@@ -51,7 +51,7 @@ func main() {
 
 	vInfo := info.NewInfo(store)
 	appHandler := handler.NewHandler(vInfo)
-	appRouter := router.NewRouter(appHandler)
+	appRouter := router.NewRouter(app.Config.SecretKey, appHandler)
 	appServer := server.NewServer(app.Config.Listen, appRouter)
 
 	wg := &sync.WaitGroup{}
