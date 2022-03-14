@@ -2,30 +2,31 @@ package info
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/go-chi/oauth"
+	"github.com/gofrs/uuid"
 )
 
 type TInfo struct {
-	ID        string    `json:"id"`
+	UUID      uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
-	URL       string    `json:"url"`
 	Descr     string    `json:"descr"`
+	Size      uint64    `json:"size"`
+	IsFile    bool      `json:"as_file"`
 	CreatedAt time.Time `json:"created_at"`
 	DeleteAt  time.Time `json:"delete_at"`
+	UserID    string    `json:"user_id"`
+	Data      []byte    `json:"data"`
 }
 
 type InfoStore interface {
-	Create(ctx context.Context, data TInfo) (string, error)
-	Read(ctx context.Context, id string) (*TInfo, error)
-	Update(ctx context.Context, id string, data TInfo) error
-	UpdateRet(ctx context.Context, id string, data TInfo) (*TInfo, error)
-	Delete(ctx context.Context, id string) error
-	DeleteRet(ctx context.Context, id string) (*TInfo, error)
-	IsExist(ctx context.Context, id string) (bool, error)
-	GetNextID(ctx context.Context) (string, error)
-	Go(ctx context.Context, id string) (string, error)
-	Stat(ctx context.Context) (chan TInfo, error)
+	CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error)
+	ReadInfo(ctx context.Context, uuid uuid.UUID) (*TInfo, error)
+	DeleteInfo(ctx context.Context, uuid uuid.UUID) error
+	// CheckAuth(ctx context.Context) error
 }
 
 type Info struct {
@@ -38,92 +39,49 @@ func NewInfo(store InfoStore) *Info {
 	}
 }
 
-// Create new data with returning it
-func (info *Info) Create(ctx context.Context, data TInfo) (*TInfo, error) {
-	id, err := info.store.Create(ctx, data)
+// Create new data with returning it UUID
+func (info *Info) CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error) {
+	var err error
+
+	data.UUID, err = uuid.NewV4()
 	if err != nil {
-		return nil, fmt.Errorf("create data error: %w", err)
+		return uuid.UUID{}, fmt.Errorf("create data error: %w", err)
 	}
-	data.ID = id
-	return &data, nil
+
+	_, err = info.store.CreateInfo(ctx, data)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("create data error: %w", err)
+	}
+
+	return data.UUID, nil
 }
 
-// Return Link by ID
-func (info *Info) Read(ctx context.Context, id string) (*TInfo, error) {
-	data, err := info.store.Read(ctx, id)
+// Get Info by UUID
+func (info *Info) ReadInfo(ctx context.Context, uuid uuid.UUID) (*TInfo, error) {
+	data, err := info.store.ReadInfo(ctx, uuid)
 	if err != nil {
 		return nil, fmt.Errorf("read data error: %w", err)
 	}
-	return data, nil
-}
 
-// Update Link by ID
-func (info *Info) Update(ctx context.Context, id string, data TInfo) error {
-	err := info.store.Update(ctx, id, data)
-	if err != nil {
-		return fmt.Errorf("update data error: %w", err)
+	claim := ctx.Value(oauth.ClaimsContext).(map[string]string)
+	if claim["user_id"] != data.UserID {
+		return nil, errors.New("read permission error")
 	}
-	return nil
-}
 
-// Update Link by ID with returning updated Link
-func (info *Info) UpdateRet(ctx context.Context, id string, data TInfo) (*TInfo, error) {
-	lNew, err := info.store.UpdateRet(ctx, id, data)
-	if err != nil {
-		return nil, fmt.Errorf("update data error: %w", err)
-	}
-	return lNew, nil
-}
-
-// Delete Link by ID
-func (info *Info) Delete(ctx context.Context, id string) error {
-	err := info.store.Delete(ctx, id)
-	if err != nil {
-		return fmt.Errorf("delete data error: %w", err)
-	}
-	return nil
-}
-
-// Delete by ID with returning deleted Link
-func (info *Info) DeleteRet(ctx context.Context, id string) (*TInfo, error) {
-	dLink, err := info.store.DeleteRet(ctx, id)
+	err = info.store.DeleteInfo(ctx, uuid)
 	if err != nil {
 		return nil, fmt.Errorf("delete data error: %w", err)
 	}
-	return dLink, nil
-}
 
-// Return URL by ID for redirection
-func (info *Info) Go(ctx context.Context, id string) (string, error) {
-	// return url.URL{ Scheme: "https", Host: r.Host, Path: r.URL.Path, RawQuery: r.URL.RawQuery, }
-	data, err := info.store.Go(ctx, id)
-	if err != nil {
-		return "", fmt.Errorf("redirect data error: %w", err)
-	}
 	return data, nil
 }
 
-func (info *Info) Stat(ctx context.Context) (chan TInfo, error) {
-	chin, err := info.store.Stat(ctx)
+// Get Stat by UUID
+func (info *Info) StatInfo(ctx context.Context, uuid uuid.UUID) (*TInfo, error) {
+	data, err := info.store.ReadInfo(ctx, uuid)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read data error: %w", err)
 	}
-	chout := make(chan TInfo, 100)
-
-	go func() {
-		defer close(chout)
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case data, ok := <-chin:
-				if !ok {
-					return
-				}
-				chout <- data
-			}
-		}
-	}()
-
-	return chout, nil
+	data.Data = []byte{}
+	return data, nil
 }

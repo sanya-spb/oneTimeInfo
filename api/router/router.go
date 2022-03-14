@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/oauth"
 	"github.com/go-chi/render"
+	"github.com/gofrs/uuid"
 	"github.com/sanya-spb/oneTimeInfo/api/handler"
 )
 
@@ -25,17 +26,17 @@ type Router struct {
 type TInfo handler.TInfo
 
 func (info *TInfo) Bind(r *http.Request) error {
-	if info.Name == "" {
-		return errors.New("missing required field: Name")
-	}
-	if info.URL == "" {
-		return errors.New("missing required field: URL")
-	}
-	if info.Descr == "" {
-		return errors.New("missing required field: Descr")
-	}
+	// if info.Name == "" {
+	// 	return errors.New("missing required field: Name")
+	// }
+	// if info.Type == "" {
+	// 	return errors.New("missing required field: Type")
+	// }
+	// if info.Descr == "" {
+	// 	return errors.New("missing required field: Descr")
+	// }
 
-	info.ID = ""
+	info.UUID = uuid.UUID{}
 	info.CreatedAt = time.Now()
 
 	return nil
@@ -58,6 +59,11 @@ func NewRouter(secret string, hHandler *handler.Handler) *Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.NoCache)
 
+	// Set a timeout value on the request context (ctx), that will signal
+	// through ctx.Done() that the request has timed out and further
+	// processing should be stopped.
+	r.Use(middleware.Timeout(60 * time.Second))
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "HEAD", "OPTION"},
@@ -73,13 +79,16 @@ func NewRouter(secret string, hHandler *handler.Handler) *Router {
 		&UserVerifier{},
 		nil)
 
-	r.Post("/token", s.UserCredentials)
-	r.Post("/auth", s.ClientCredentials)
+	r.Post("/oauth/token", s.UserCredentials)
+	// r.Post("/oauth/auth", s.ClientCredentials)
 
 	r.Route("/", func(r chi.Router) {
 		// use the Bearer Authentication middleware
 		r.Use(oauth.Authorize(secret, nil))
 		r.Get("/checkAuth", CheckAuth)
+		r.Post("/upload", rRouter.CreateInfo)
+		r.Get("/get/{uuid}", rRouter.ReadInfo)
+		r.Get("/stat/{uuid}", rRouter.StatInfo)
 	})
 
 	r.Get("/ui/*", rRouter.ui)
@@ -88,13 +97,17 @@ func NewRouter(secret string, hHandler *handler.Handler) *Router {
 	return rRouter
 }
 
-// TestUserVerifier provides user credentials verifier for testing.
+// UserVerifier provides user credentials verifier.
 type UserVerifier struct {
 }
 
 // ValidateUser validates username and password returning an error if the user credentials are wrong
 func (*UserVerifier) ValidateUser(username, password, scope string, r *http.Request) error {
 	if username == "test" && password == "12345678" {
+		// ctx := context.WithValue(r.Context(), "user_id", 1001)
+		// r.WithContext(ctx)
+		// next.ServeHTTP(w, r.WithContext(ctx))
+
 		return nil
 	}
 
@@ -118,7 +131,7 @@ func (*UserVerifier) ValidateCode(clientID, clientSecret, code, redirectURI stri
 // AddClaims provides additional claims to the token
 func (*UserVerifier) AddClaims(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
 	claims := make(map[string]string)
-	// claims["customer_id"] = "1001"
+	claims["user_id"] = "1001"
 	// claims["customer_data"] = `{"order_date":"2016-12-14","order_id":"9999"}`
 	return claims, nil
 }
@@ -155,10 +168,14 @@ func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
 }
 
 func CheckAuth(w http.ResponseWriter, req *http.Request) {
-	type TCheckAuth struct {
-		Status string
+	type TResult struct {
+		Status string `json:"status"`
+		UserID string `json:"user_id"`
 	}
-	renderJSON(w, TCheckAuth{Status: "verified"}, http.StatusOK)
+
+	claim := req.Context().Value(oauth.ClaimsContext).(map[string]string)
+
+	renderJSON(w, TResult{Status: "verified", UserID: claim["user_id"]}, http.StatusOK)
 }
 
 func (rRouter *Router) ui(w http.ResponseWriter, req *http.Request) {
@@ -176,4 +193,56 @@ func (rRouter *Router) ui(w http.ResponseWriter, req *http.Request) {
 	} else {
 		fs.ServeHTTP(w, req)
 	}
+}
+
+func (rRouter *Router) CreateInfo(w http.ResponseWriter, req *http.Request) {
+	type TResult struct {
+		UUID uuid.UUID `json:"uuid"`
+	}
+
+	info := TInfo{}
+	if err := render.Bind(req, &info); err != nil {
+		render.Render(w, req, Err400(err))
+		return
+	}
+
+	vUUID, err := rRouter.hHandler.Create(req.Context(), handler.TInfo(info))
+	if err != nil {
+		render.Render(w, req, Err500(err))
+		return
+	}
+
+	renderJSON(w, TResult{UUID: vUUID}, http.StatusCreated)
+}
+
+func (rRouter *Router) ReadInfo(w http.ResponseWriter, req *http.Request) {
+	uuid := chi.URLParam(req, "uuid")
+
+	data, err := rRouter.hHandler.ReadInfo(req.Context(), uuid)
+	if err != nil {
+		if errors.As(err, &handler.ErrInfoNotFound) {
+			render.Render(w, req, Err404(err))
+			return
+		}
+		render.Render(w, req, Err500(err))
+		return
+	}
+
+	renderJSON(w, TInfo(data), http.StatusOK)
+}
+
+func (rRouter *Router) StatInfo(w http.ResponseWriter, req *http.Request) {
+	uuid := chi.URLParam(req, "uuid")
+
+	data, err := rRouter.hHandler.StatInfo(req.Context(), uuid)
+	if err != nil {
+		if errors.As(err, &handler.ErrInfoNotFound) {
+			render.Render(w, req, Err404(err))
+			return
+		}
+		render.Render(w, req, Err500(err))
+		return
+	}
+
+	renderJSON(w, TInfo(data), http.StatusOK)
 }
