@@ -20,7 +20,6 @@ type App struct {
 // init for App
 func NewApp(store info.InfoStore) (*App, error) {
 	app := &App{
-		Info:    info.NewInfo(store),
 		Version: *version.Version,
 		Config:  *config.NewConfig(),
 	}

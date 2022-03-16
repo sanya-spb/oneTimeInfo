@@ -30,6 +30,16 @@ func Err400(err error) render.Renderer {
 	}
 }
 
+// 401 Unauthorized
+func Err401(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: 401,
+		StatusText:     "Unauthorized",
+		ErrorText:      err.Error(),
+	}
+}
+
 // 403 Forbidden
 func Err403(err error) render.Renderer {
 	return &ErrResponse{

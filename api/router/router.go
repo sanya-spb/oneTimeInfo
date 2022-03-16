@@ -2,53 +2,87 @@ package router
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+
+	"encoding/base64"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/go-chi/oauth"
 	"github.com/go-chi/render"
 	"github.com/gofrs/uuid"
 	"github.com/sanya-spb/oneTimeInfo/api/handler"
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 type Router struct {
 	http.Handler
-	hHandler *handler.Handler
-	secret   string
+	hHandler  *handler.Handler
+	secretKey [32]byte
 }
+
+type Token struct {
+	Status    string    `json:"status"`
+	FileID    uint      `json:"file"`
+	ServiceID uint      `json:"service"`
+	ValidFrom time.Time `json:"valid_from"`
+	ValidTo   time.Time `json:"valid_to"`
+}
+
+const tokenStatusOk string = "ok"
 
 type TInfo handler.TInfo
 
 func (info *TInfo) Bind(r *http.Request) error {
-	// if info.Name == "" {
-	// 	return errors.New("missing required field: Name")
-	// }
-	// if info.Type == "" {
-	// 	return errors.New("missing required field: Type")
-	// }
-	// if info.Descr == "" {
-	// 	return errors.New("missing required field: Descr")
-	// }
-
 	info.UUID = uuid.UUID{}
 	info.CreatedAt = time.Now()
 
 	return nil
 }
+
+func (token *Token) Bind(r *http.Request) error {
+	if !(token.FileID > 0) {
+		return errors.New("missing required field: file")
+	}
+
+	if !(token.ServiceID > 0) {
+		return errors.New("missing required field: service")
+	}
+
+	if token.ValidFrom.IsZero() {
+		token.ValidFrom = time.Now()
+	}
+
+	if token.ValidTo.IsZero() {
+		token.ValidTo = time.Now().Add(time.Hour * 24 * 14)
+	}
+
+	token.Status = tokenStatusOk
+
+	return nil
+}
+
 func (info *TInfo) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func NewRouter(secret string, hHandler *handler.Handler) *Router {
+func (token *Token) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 	rRouter := &Router{
-		hHandler: hHandler,
-		// secret:   secret,
+		hHandler:  hHandler,
+		secretKey: secretKey,
 	}
 
 	r := chi.NewRouter()
@@ -73,22 +107,18 @@ func NewRouter(secret string, hHandler *handler.Handler) *Router {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	s := oauth.NewBearerServer(
-		secret,
-		time.Second*120,
-		&UserVerifier{},
-		nil)
-
-	r.Post("/oauth/token", s.UserCredentials)
-	// r.Post("/oauth/auth", s.ClientCredentials)
-
 	r.Route("/", func(r chi.Router) {
-		// use the Bearer Authentication middleware
-		r.Use(oauth.Authorize(secret, nil))
-		r.Get("/checkAuth", CheckAuth)
+		r.Use(rRouter.BasicAuthentication)
+		r.Get("/checkAuth", rRouter.CheckAuthBasic)
+		r.Post("/token", rRouter.GetToken)
 		r.Post("/upload", rRouter.CreateInfo)
 		r.Get("/get/{uuid}", rRouter.ReadInfo)
 		r.Get("/stat/{uuid}", rRouter.StatInfo)
+	})
+
+	r.Route("/r", func(r chi.Router) {
+		r.Use(rRouter.BearerAuthentication)
+		r.Get("/checkAuth", rRouter.CheckAuthBearer)
 	})
 
 	r.Get("/ui/*", rRouter.ui)
@@ -97,60 +127,12 @@ func NewRouter(secret string, hHandler *handler.Handler) *Router {
 	return rRouter
 }
 
-// UserVerifier provides user credentials verifier.
-type UserVerifier struct {
-}
-
 // ValidateUser validates username and password returning an error if the user credentials are wrong
-func (*UserVerifier) ValidateUser(username, password, scope string, r *http.Request) error {
-	if username == "test" && password == "12345678" {
-		// ctx := context.WithValue(r.Context(), "user_id", 1001)
-		// r.WithContext(ctx)
-		// next.ServeHTTP(w, r.WithContext(ctx))
-
+func (rRouter *Router) ValidateUser(username, password, scope string, r *http.Request) error {
+	if rRouter.hHandler.CheckCredentials(username, password) {
 		return nil
 	}
-
 	return errors.New("wrong user")
-}
-
-// ValidateClient validates clientID and secret returning an error if the client credentials are wrong
-func (*UserVerifier) ValidateClient(clientID, clientSecret, scope string, r *http.Request) error {
-	// if clientID == "abcdef" && clientSecret == "12345" {
-	// 	return nil
-	// }
-
-	return errors.New("wrong client")
-}
-
-// ValidateCode validates token ID
-func (*UserVerifier) ValidateCode(clientID, clientSecret, code, redirectURI string, r *http.Request) (string, error) {
-	return "", nil
-}
-
-// AddClaims provides additional claims to the token
-func (*UserVerifier) AddClaims(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
-	claims := make(map[string]string)
-	claims["user_id"] = "1001"
-	// claims["customer_data"] = `{"order_date":"2016-12-14","order_id":"9999"}`
-	return claims, nil
-}
-
-// AddProperties provides additional information to the token response
-func (*UserVerifier) AddProperties(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
-	props := make(map[string]string)
-	props["auth_server_name"] = "otin-backend"
-	return props, nil
-}
-
-// ValidateTokenID validates token ID
-func (*UserVerifier) ValidateTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
-	return nil
-}
-
-// StoreTokenID saves the token id generated for the user
-func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
-	return nil
 }
 
 func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
@@ -167,80 +149,233 @@ func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
 	_, _ = w.Write(buf.Bytes())
 }
 
-func CheckAuth(w http.ResponseWriter, req *http.Request) {
+func (rRouter *Router) CheckAuthBasic(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		Status string `json:"status"`
-		UserID string `json:"user_id"`
+		User   string `json:"login"`
+		UID    uint   `json:"uid"`
+		GID    uint   `json:"gid"`
 	}
 
-	claim := req.Context().Value(oauth.ClaimsContext).(map[string]string)
+	user, _, _ := r.BasicAuth()
+	vUser, _ := rRouter.hHandler.GetUser(user)
 
-	renderJSON(w, TResult{Status: "verified", UserID: claim["user_id"]}, http.StatusOK)
+	result := TResult{
+		Status: "ok",
+		User:   user,
+		UID:    vUser.UID,
+		GID:    vUser.GID,
+	}
+
+	renderJSON(w, result, http.StatusOK)
 }
 
-func (rRouter *Router) ui(w http.ResponseWriter, req *http.Request) {
+func (rRouter *Router) CheckAuthBearer(w http.ResponseWriter, r *http.Request) {
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+
+	renderJSON(w, token, http.StatusOK)
+}
+
+// Get user from authorization header.
+func CredFromHeader(r *http.Request) string {
+	cred := r.Header.Get("Authorization")
+	if len(cred) > 6 && strings.ToUpper(cred[0:5]) == "basic" {
+		return cred[6:]
+	}
+	return ""
+}
+
+// Get token from authorization header.
+func TokenFromHeader(r *http.Request) string {
+	bearer := r.Header.Get("Authorization")
+	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
+		return bearer[7:]
+	}
+	return ""
+}
+
+func TokenEncrypt(token Token, secretKey [32]byte) (string, error) {
+	var nonce [24]byte
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+		return "", fmt.Errorf("secretKey format error: %s", err.Error())
+	}
+
+	tokenJSON, err := json.Marshal(token)
+	if err != nil {
+		return "", fmt.Errorf("token serialization error: %s", err.Error())
+	}
+
+	encryptedToken := secretbox.Seal(nonce[:], []byte(tokenJSON), &nonce, &secretKey)
+
+	return base64.StdEncoding.EncodeToString([]byte(encryptedToken)), nil
+}
+
+func TokenDecrypt(cryptedTokenBase64 string, secretKey [32]byte) (*Token, error) {
+	cryptedToken, err := base64.StdEncoding.DecodeString(cryptedTokenBase64)
+	if err != nil {
+		return nil, fmt.Errorf("token format error: %s", err.Error())
+	}
+
+	log.Printf("len=%d", len(cryptedToken))
+	if !(len(cryptedToken) > 24) {
+		return nil, fmt.Errorf("token format error: %s", err.Error())
+	}
+
+	var decryptNonce [24]byte
+	copy(decryptNonce[:], cryptedToken[:24])
+	decrypted, ok := secretbox.Open(nil, cryptedToken[24:], &decryptNonce, &secretKey)
+	if !ok {
+		return nil, fmt.Errorf("token decryption error: %s", err.Error())
+	}
+
+	var token Token
+	err = json.Unmarshal(decrypted, &token)
+	if err != nil {
+		return nil, fmt.Errorf("token deserialization error: %s", err.Error())
+	}
+
+	return &token, nil
+}
+
+func (rRouter *Router) BearerAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bearer := TokenFromHeader(r)
+
+		if bearer == "" {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		token, err := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+		if err != nil {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		if token.Status != tokenStatusOk {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		if !token.ValidFrom.Before(time.Now()) {
+			http.Error(w, "Token expired", http.StatusUnauthorized)
+			return
+		}
+
+		if !token.ValidTo.After(time.Now()) {
+			http.Error(w, "Token expired", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rRouter *Router) BasicAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		if !ok {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		if user == "" || pass == "" {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		if !rRouter.hHandler.CheckCredentials(user, pass) {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (rRouter *Router) ui(w http.ResponseWriter, r *http.Request) {
 	root := "./data"
 	fs := http.FileServer(http.Dir(root))
 
-	url, err := req.URL.Parse(req.RequestURI)
+	url, err := r.URL.Parse(r.RequestURI)
 	if err != nil {
-		render.Render(w, req, Err500(err))
+		render.Render(w, r, Err500(err))
 		return
 	}
 
 	if _, err := os.Stat(root + url.Path); os.IsNotExist(err) {
-		http.StripPrefix(req.RequestURI, fs).ServeHTTP(w, req)
+		http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
 	} else {
-		fs.ServeHTTP(w, req)
+		fs.ServeHTTP(w, r)
 	}
 }
 
-func (rRouter *Router) CreateInfo(w http.ResponseWriter, req *http.Request) {
+func (rRouter *Router) GetToken(w http.ResponseWriter, r *http.Request) {
+	type TResult struct {
+		Token string `json:"token"`
+	}
+
+	var token Token
+	if err := render.Bind(r, &token); err != nil {
+		render.Render(w, r, Err400(err))
+		return
+	}
+
+	tokenEncryptedBase64, err := TokenEncrypt(token, rRouter.secretKey)
+	if err != nil {
+		render.Render(w, r, Err400(err))
+		return
+	}
+
+	renderJSON(w, TResult{Token: tokenEncryptedBase64}, http.StatusCreated)
+}
+
+func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		UUID uuid.UUID `json:"uuid"`
 	}
 
 	info := TInfo{}
-	if err := render.Bind(req, &info); err != nil {
-		render.Render(w, req, Err400(err))
+	if err := render.Bind(r, &info); err != nil {
+		render.Render(w, r, Err400(err))
 		return
 	}
 
-	vUUID, err := rRouter.hHandler.Create(req.Context(), handler.TInfo(info))
+	vUUID, err := rRouter.hHandler.Create(r.Context(), handler.TInfo(info))
 	if err != nil {
-		render.Render(w, req, Err500(err))
+		render.Render(w, r, Err500(err))
 		return
 	}
 
 	renderJSON(w, TResult{UUID: vUUID}, http.StatusCreated)
 }
 
-func (rRouter *Router) ReadInfo(w http.ResponseWriter, req *http.Request) {
-	uuid := chi.URLParam(req, "uuid")
+func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
+	uuid := chi.URLParam(r, "uuid")
 
-	data, err := rRouter.hHandler.ReadInfo(req.Context(), uuid)
+	data, err := rRouter.hHandler.ReadInfo(r.Context(), uuid)
 	if err != nil {
 		if errors.As(err, &handler.ErrInfoNotFound) {
-			render.Render(w, req, Err404(err))
+			render.Render(w, r, Err404(err))
 			return
 		}
-		render.Render(w, req, Err500(err))
+		render.Render(w, r, Err500(err))
 		return
 	}
 
 	renderJSON(w, TInfo(data), http.StatusOK)
 }
 
-func (rRouter *Router) StatInfo(w http.ResponseWriter, req *http.Request) {
-	uuid := chi.URLParam(req, "uuid")
+func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
+	uuid := chi.URLParam(r, "uuid")
 
-	data, err := rRouter.hHandler.StatInfo(req.Context(), uuid)
+	data, err := rRouter.hHandler.StatInfo(r.Context(), uuid)
 	if err != nil {
 		if errors.As(err, &handler.ErrInfoNotFound) {
-			render.Render(w, req, Err404(err))
+			render.Render(w, r, Err404(err))
 			return
 		}
-		render.Render(w, req, Err500(err))
+		render.Render(w, r, Err500(err))
 		return
 	}
 

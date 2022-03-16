@@ -2,11 +2,9 @@ package info
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/go-chi/oauth"
 	"github.com/gofrs/uuid"
 )
 
@@ -22,21 +20,42 @@ type TInfo struct {
 	Data      []byte    `json:"data"`
 }
 
+type TUser struct {
+	Login    string
+	Password string
+	UID      uint
+	GID      uint
+}
+
 type InfoStore interface {
 	CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error)
 	ReadInfo(ctx context.Context, uuid uuid.UUID) (*TInfo, error)
 	DeleteInfo(ctx context.Context, uuid uuid.UUID) error
-	// CheckAuth(ctx context.Context) error
+	CheckCredentials(login string, password string) (bool, error)
+	GetUser(login string) (*TUser, error)
+	Creds() map[string]string
 }
 
 type Info struct {
 	store InfoStore
 }
 
-func NewInfo(store InfoStore) *Info {
+func NewInfo(iStore InfoStore) *Info {
 	return &Info{
-		store: store,
+		store: iStore,
 	}
+}
+
+func (u *Info) CheckCredentials(login string, password string) (bool, error) {
+	return u.store.CheckCredentials(login, password)
+}
+
+func (u *Info) Creds() map[string]string {
+	return u.store.Creds()
+}
+
+func (u *Info) GetUser(login string) (*TUser, error) {
+	return u.store.GetUser(login)
 }
 
 // Create new data with returning it UUID
@@ -63,10 +82,10 @@ func (info *Info) ReadInfo(ctx context.Context, uuid uuid.UUID) (*TInfo, error) 
 		return nil, fmt.Errorf("read data error: %w", err)
 	}
 
-	claim := ctx.Value(oauth.ClaimsContext).(map[string]string)
-	if claim["user_id"] != data.UserID {
-		return nil, errors.New("read permission error")
-	}
+	// claim := ctx.Value(oauth.ClaimsContext).(map[string]string)
+	// if claim["user_id"] != data.UserID {
+	// 	return nil, errors.New("read permission error")
+	// }
 
 	err = info.store.DeleteInfo(ctx, uuid)
 	if err != nil {

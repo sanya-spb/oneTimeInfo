@@ -2,7 +2,7 @@
 # debug: false
 
 # secret key
-secret_key: "mySecretKey-128103033"
+secret_key: "eqr3Fr6gBEotc7GIwvRUSaNyjBOQtRs5IRD/oMJkHhA="
 
 # listen addr:port (default: ":80")
 listen: ":8181"

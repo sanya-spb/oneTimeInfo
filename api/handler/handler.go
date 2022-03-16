@@ -24,6 +24,26 @@ func NewHandler(info *info.Info) *Handler {
 // TODO: пока берем из пакета info, потом решим что тут лишнее
 type TInfo info.TInfo
 
+func (hHandler *Handler) CheckCredentials(login, password string) bool {
+	ok, err := hHandler.info.CheckCredentials(login, password)
+	if err != nil {
+		return false
+	}
+	if ok {
+		return true
+	}
+	return false
+}
+
+func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
+	vUser, err := hHandler.info.GetUser(user)
+	return *vUser, err
+}
+
+func (hHandler *Handler) Creds() map[string]string {
+	return hHandler.info.Creds()
+}
+
 func (hHandler *Handler) Create(ctx context.Context, vInfo TInfo) (uuid.UUID, error) {
 	id, err := hHandler.info.CreateInfo(ctx, info.TInfo(vInfo))
 	if err != nil {

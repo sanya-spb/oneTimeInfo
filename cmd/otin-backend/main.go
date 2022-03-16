@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -22,7 +25,7 @@ var (
 )
 
 func main() {
-	store := store.NewLinks()
+	store := store.NewInfo()
 	app, err := starter.NewApp(store)
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -47,11 +50,23 @@ func main() {
 		lErr = log.New(fErrors, "", log.LstdFlags)
 		lErr.Println("run")
 	}
+
+	secretKeyBytes, err := base64.StdEncoding.DecodeString(app.Config.SecretKey)
+	if err != nil {
+		log.Fatalln(fmt.Errorf("secretKey format error: %s", err.Error()))
+	}
+	var secretKey [32]byte
+	copy(secretKey[:], secretKeyBytes)
+
+	if len(secretKey) != 32 {
+		log.Fatalln(errors.New("secretKey length error"))
+	}
+
 	app.Welcome()
 
 	vInfo := info.NewInfo(store)
 	appHandler := handler.NewHandler(vInfo)
-	appRouter := router.NewRouter(app.Config.SecretKey, appHandler)
+	appRouter := router.NewRouter(secretKey, appHandler)
 	appServer := server.NewServer(app.Config.Listen, appRouter)
 
 	wg := &sync.WaitGroup{}
