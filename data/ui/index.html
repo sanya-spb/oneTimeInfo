@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTIN UI</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>OTIN - OneTimeInfo</h1>
+    <nav>
+    <ul class="tab-list">
+        <li class="active" id="tab-login"><a class="tab-control" href="#tab-1">Login</a></li>
+        <li class="disabled" id="tab-upload"><a class="tab-control" href="#tab-2">Upload</a></li>
+        <li class="disabled" id="tab-list"><a class="tab-control" href="#tab-3">List</a></li>
+    </ul>
+    </nav>
+    <div class="tab-panel active" id="tab-1">
+        <section id="content">
+            login<br>
+            <input type="text" name="user"><br>
+            password<br>
+            <input type="password" name="pass"><br>
+            <input type="button" name="submit" value="submit">
+            <div id=result-status>status: none</div>
+        </section>
+    </div><div class="tab-panel" id="tab-2">
+
+    </div><div class="tab-panel" id="tab-3">
+
+    </div>
+
+<script>
+    window.jQuery || document.write('<script src="/ui/js/jquery-3.6.0.min.js"><\/script>')
+    var token = ""
+
+    $(document).ready(function() {
+        $("input[name='submit']").click(function() {
+
+            var user = $("input[name='user']").val();
+            var pass = $("input[name='pass']").val();
+
+            $.ajax({
+                url: "/token",
+                type: "GET",
+                dataType: "json",
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader('Authorization', authenticateUser(user, pass))
+                },
+                success: function(response) {
+                    token = response.token
+                    console.log(token)
+                    $("#result-status").text("status: authorized")
+                    $('#tab-upload').removeClass('disabled');
+                    $('#tab-list').removeClass('disabled');
+                },
+                
+                error: function() {
+                    $("#result-status").text("status: not authorized")
+                    $('#tab-upload').addClass('disabled');
+                    $('#tab-list').addClass('disabled');
+                }
+            });
+        });
+    });
+
+    $('.tab-list').each(function(){
+        var $this = $(this);
+        var $tab = $this.find('li.active');
+        var $link = $tab.find('a');
+        var $panel = $($link.attr('href'));
+        $this.on('click', '.tab-control', function(e) {
+            e.preventDefault();
+            var $link = $(this);
+            var id = this.hash;
+            if (id && !$link.is('.active')) {
+                $panel.removeClass('active');
+                $tab.removeClass('active');
+                $panel = $(id).addClass('active');
+                $tab = $link.parent().addClass('active');
+            }
+        });
+    })
+
+    function authenticateUser(user, password) {
+        var token = user + ":" + password;
+    
+        // Base64 Encoding -> btoa
+        var hash = btoa(token); 
+    
+        return "Basic " + hash;
+    }
+
+</script>
+</body>
+</html>

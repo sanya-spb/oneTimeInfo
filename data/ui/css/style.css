@@ -1,0 +1,148 @@
+input[type="text" i]:read-only {
+    color: darkgrey
+}
+input[type="text" i] {
+    width: 200px;
+    height: 24px;
+    margin: 0 auto;
+    border: none;
+    border:solid 1px #ccc;
+    border-radius: 5px;
+}
+
+input[type="password" i] {
+    width: 200px;
+    height: 24px;
+    margin: 0 auto;
+    border: none;
+    border:solid 1px #ccc;
+    border-radius: 5px;
+}
+input[type="button"] {
+    color:#08233e;
+    padding:8px;
+    margin: 2px;
+    background-color:#ccc;
+    border: 0px solid #f00;
+    -moz-border-radius:5px;
+    -webkit-border-radius:5px;
+    border-radius:5px;
+    border-bottom:1px solid #9f9f9f;
+    -moz-box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+    -webkit-box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+    cursor:pointer;
+    display:block;
+    width: 80px;
+}
+input[type=button]:hover {
+    background-color:#06f;
+}
+input[type="checkbox" i] {
+    display: inline-block;
+    width: 1.1em;
+    height: 1.1em;
+    border-radius: 5px;
+    margin-right: 5px;
+}
+input {
+    padding: 1px 2px;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.disabled{
+    pointer-events:none;
+    color:gray;
+}
+
+
+body {
+    font: 300 15px/1.2 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #333;
+    margin: 20px;
+}
+
+h1 {
+    margin-bottom: 20px;
+    color: #fff;
+    /* text-transform: uppercase; */
+    font-size: 55px;
+    font-weight: 100;
+    letter-spacing: 30px;
+    text-shadow: 3px 3px 5px #000;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0 0 0 10px;
+    min-width: 460px;
+}
+
+nav li {
+    float: left;
+    position: relative;
+    height: 30px;
+    border-radius: 10px 30px 0 0;
+    margin-left: -10px;
+    text-shadow: 1px 1px 0 #bbb;
+    box-shadow: 0px 0px 10px rgba(0,0,0,.5);
+    transition: .2s;
+}
+
+nav a {
+    display: block;
+    position: relative;
+    width: 90px;
+    height: 20px;
+    padding: 6px 10px 20px 0;
+    border-radius: 10px 30px 0 0;
+    background: #999;
+    color: #444;
+    text-align: center;
+    text-decoration: none;
+    transition: .2s;
+}
+
+nav li:hover {
+    z-index: 1;
+}
+
+nav li:hover a {
+    background: #ccc;
+    color: #000;
+    text-decoration: underline;
+}
+
+.active {
+    z-index: 2;
+}
+
+li.active a {
+    z-index: 3;
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+    font-weight: 500;
+}
+
+#content {
+    position: relative;
+    z-index: 1;
+    clear: both;
+    min-width: 420px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,.5);
+    background: #fff;
+}
+
+#content p {
+    margin: 20px 0;
+}
