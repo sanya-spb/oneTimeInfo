@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gofrs/uuid"
 	"github.com/sanya-spb/oneTimeInfo/app/repos/info"
 )
 
@@ -40,11 +39,7 @@ func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
 	return *vUser, err
 }
 
-func (hHandler *Handler) Creds() map[string]string {
-	return hHandler.info.Creds()
-}
-
-func (hHandler *Handler) Create(ctx context.Context, vInfo TInfo) (uuid.UUID, error) {
+func (hHandler *Handler) Create(ctx context.Context, vInfo TInfo) (uint, error) {
 	id, err := hHandler.info.CreateInfo(ctx, info.TInfo(vInfo))
 	if err != nil {
 		return id, fmt.Errorf("error when creating: %w", err)
@@ -53,17 +48,8 @@ func (hHandler *Handler) Create(ctx context.Context, vInfo TInfo) (uuid.UUID, er
 	return id, nil
 }
 
-func (hHandler *Handler) StatInfo(ctx context.Context, id string) (TInfo, error) {
-	if id == "" {
-		return TInfo{}, fmt.Errorf("bad request: UUID is empty")
-	}
-
-	vUUID, err := uuid.FromString(id)
-	if err != nil {
-		return TInfo{}, fmt.Errorf("bad request: UUID is wrong")
-	}
-
-	data, err := hHandler.info.ReadInfo(ctx, vUUID)
+func (hHandler *Handler) StatInfo(ctx context.Context, fileID uint, serviceID int) (TInfo, error) {
+	data, err := hHandler.info.StatInfo(ctx, fileID, serviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
@@ -74,17 +60,8 @@ func (hHandler *Handler) StatInfo(ctx context.Context, id string) (TInfo, error)
 	return TInfo(*data), nil
 }
 
-func (hHandler *Handler) ReadInfo(ctx context.Context, id string) (TInfo, error) {
-	if id == "" {
-		return TInfo{}, fmt.Errorf("bad request: ID is empty")
-	}
-
-	vUUID, err := uuid.FromString(id)
-	if err != nil {
-		return TInfo{}, fmt.Errorf("bad request: UUID is wrong")
-	}
-
-	delData, err := hHandler.info.ReadInfo(ctx, vUUID)
+func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uint, serviceID int) (TInfo, error) {
+	delData, err := hHandler.info.ReadInfo(ctx, fileID, serviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
@@ -93,4 +70,29 @@ func (hHandler *Handler) ReadInfo(ctx context.Context, id string) (TInfo, error)
 	}
 
 	return TInfo(*delData), nil
+}
+
+func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
+	chin, err := hHandler.info.ListInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	chout := make(chan TInfo, 100)
+
+	go func() {
+		defer close(chout)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case data, ok := <-chin:
+				if !ok {
+					return
+				}
+				chout <- TInfo(data)
+			}
+		}
+	}()
+
+	return chout, nil
 }

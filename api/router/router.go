@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -19,7 +18,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
-	"github.com/gofrs/uuid"
 	"github.com/sanya-spb/oneTimeInfo/api/handler"
 	"golang.org/x/crypto/nacl/secretbox"
 )
@@ -33,7 +31,7 @@ type Router struct {
 type Token struct {
 	Status    string    `json:"status"`
 	FileID    uint      `json:"file"`
-	ServiceID uint      `json:"service"`
+	ServiceID int       `json:"service"`
 	ValidFrom time.Time `json:"valid_from"`
 	ValidTo   time.Time `json:"valid_to"`
 }
@@ -43,8 +41,31 @@ const tokenStatusOk string = "ok"
 type TInfo handler.TInfo
 
 func (info *TInfo) Bind(r *http.Request) error {
-	info.UUID = uuid.UUID{}
-	info.CreatedAt = time.Now()
+	if info.Name == "" {
+		return errors.New("missing required field: name")
+	}
+
+	if info.Descr == "" {
+		return errors.New("missing required field: descr")
+	}
+
+	if info.DataBase64 == "" {
+		return errors.New("missing required field: data")
+	}
+
+	if data, err := base64.StdEncoding.DecodeString(info.DataBase64); err != nil {
+		return fmt.Errorf("data format error: %s", err)
+	} else {
+		info.Size = len(data)
+	}
+
+	if info.CreatedAt.IsZero() {
+		info.CreatedAt = time.Now()
+	}
+
+	if info.DeleteAt.IsZero() {
+		info.DeleteAt = time.Now().Add(time.Hour * 24 * 14)
+	}
 
 	return nil
 }
@@ -71,13 +92,13 @@ func (token *Token) Bind(r *http.Request) error {
 	return nil
 }
 
-func (info *TInfo) Render(w http.ResponseWriter, r *http.Request) error {
+func (info TInfo) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (token *Token) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
+// func (token *Token) Render(w http.ResponseWriter, r *http.Request) error {
+// 	return nil
+// }
 
 func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 	rRouter := &Router{
@@ -107,32 +128,30 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/ui/", http.StatusFound)
+	})
+
 	r.Route("/", func(r chi.Router) {
 		r.Use(rRouter.BasicAuthentication)
 		r.Get("/checkAuth", rRouter.CheckAuthBasic)
 		r.Post("/token", rRouter.GetToken)
 		r.Post("/upload", rRouter.CreateInfo)
-		r.Get("/get/{uuid}", rRouter.ReadInfo)
-		r.Get("/stat/{uuid}", rRouter.StatInfo)
+		r.Post("/list", rRouter.ListInfo)
 	})
 
 	r.Route("/r", func(r chi.Router) {
 		r.Use(rRouter.BearerAuthentication)
+		// for development period only (unsecured!)
 		r.Get("/checkAuth", rRouter.CheckAuthBearer)
+		r.Get("/g", rRouter.ReadInfo)
+		r.Get("/s", rRouter.StatInfo)
 	})
 
 	r.Get("/ui/*", rRouter.ui)
 
 	rRouter.Handler = r
 	return rRouter
-}
-
-// ValidateUser validates username and password returning an error if the user credentials are wrong
-func (rRouter *Router) ValidateUser(username, password, scope string, r *http.Request) error {
-	if rRouter.hHandler.CheckCredentials(username, password) {
-		return nil
-	}
-	return errors.New("wrong user")
 }
 
 func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
@@ -216,7 +235,6 @@ func TokenDecrypt(cryptedTokenBase64 string, secretKey [32]byte) (*Token, error)
 		return nil, fmt.Errorf("token format error: %s", err.Error())
 	}
 
-	log.Printf("len=%d", len(cryptedToken))
 	if !(len(cryptedToken) > 24) {
 		return nil, fmt.Errorf("token format error: %s", err.Error())
 	}
@@ -332,7 +350,9 @@ func (rRouter *Router) GetToken(w http.ResponseWriter, r *http.Request) {
 
 func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
-		UUID uuid.UUID `json:"uuid"`
+		Status    string `json:"status"`
+		Token     string `json:"token"`
+		TokenData Token
 	}
 
 	info := TInfo{}
@@ -341,19 +361,44 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vUUID, err := rRouter.hHandler.Create(r.Context(), handler.TInfo(info))
+	id, err := rRouter.hHandler.Create(r.Context(), handler.TInfo(info))
 	if err != nil {
 		render.Render(w, r, Err500(err))
 		return
 	}
 
-	renderJSON(w, TResult{UUID: vUUID}, http.StatusCreated)
+	vInfo, err := rRouter.hHandler.StatInfo(r.Context(), id, 1)
+	if err != nil {
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	token := Token{
+		Status:    tokenStatusOk,
+		FileID:    id,
+		ServiceID: 1,
+		ValidFrom: vInfo.CreatedAt,
+		ValidTo:   vInfo.DeleteAt,
+	}
+
+	tokenEncryptedBase64, err := TokenEncrypt(token, rRouter.secretKey)
+	if err != nil {
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	result := TResult{
+		Status:    tokenStatusOk,
+		Token:     tokenEncryptedBase64,
+		TokenData: token,
+	}
+	renderJSON(w, result, http.StatusCreated)
 }
 
 func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
-	uuid := chi.URLParam(r, "uuid")
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	data, err := rRouter.hHandler.ReadInfo(r.Context(), uuid)
+	data, err := rRouter.hHandler.ReadInfo(r.Context(), token.FileID, token.ServiceID)
 	if err != nil {
 		if errors.As(err, &handler.ErrInfoNotFound) {
 			render.Render(w, r, Err404(err))
@@ -367,9 +412,9 @@ func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
-	uuid := chi.URLParam(r, "uuid")
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	data, err := rRouter.hHandler.StatInfo(r.Context(), uuid)
+	data, err := rRouter.hHandler.StatInfo(r.Context(), token.FileID, token.ServiceID)
 	if err != nil {
 		if errors.As(err, &handler.ErrInfoNotFound) {
 			render.Render(w, r, Err404(err))
@@ -380,4 +425,37 @@ func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderJSON(w, TInfo(data), http.StatusOK)
+}
+
+func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
+	chin, err := rRouter.hHandler.ListInfo(r.Context())
+	if err != nil {
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	first := true
+	for {
+		select {
+		case <-r.Context().Done():
+			render.Render(w, r, Err500(err))
+			return
+		case data, ok := <-chin:
+			if !ok {
+				if !first {
+					first = false
+					fmt.Fprintln(w, "]}")
+				}
+				return
+			}
+			if first {
+				first = false
+				fmt.Fprintln(w, "{ \"Info\": [")
+			} else {
+				fmt.Fprintln(w, ",")
+			}
+			render.Render(w, r, TInfo(data))
+		}
+	}
+
 }

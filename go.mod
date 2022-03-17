@@ -11,7 +11,6 @@ require (
 )
 
 require (
-	github.com/gofrs/uuid v4.0.0+incompatible
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
 )
 
