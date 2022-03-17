@@ -30,6 +30,8 @@ type Router struct {
 
 type Token struct {
 	Status    string    `json:"status"`
+	UID       uint      `json:"uid"`
+	GID       uint      `json:"gid"`
 	FileID    uint      `json:"file"`
 	ServiceID int       `json:"service"`
 	ValidFrom time.Time `json:"valid_from"`
@@ -71,6 +73,12 @@ func (info *TInfo) Bind(r *http.Request) error {
 }
 
 func (token *Token) Bind(r *http.Request) error {
+	token.Status = tokenStatusOk
+
+	if !(token.GID > 0) {
+		return errors.New("missing required field: gid")
+	}
+
 	if !(token.FileID > 0) {
 		return errors.New("missing required field: file")
 	}
@@ -84,10 +92,12 @@ func (token *Token) Bind(r *http.Request) error {
 	}
 
 	if token.ValidTo.IsZero() {
-		token.ValidTo = time.Now().Add(time.Hour * 24 * 14)
+		if token.GID == 1 {
+			token.ValidTo = time.Now().Add(time.Minute * 30)
+		} else {
+			token.ValidTo = time.Now().Add(time.Hour * 24 * 14)
+		}
 	}
-
-	token.Status = tokenStatusOk
 
 	return nil
 }
@@ -95,10 +105,6 @@ func (token *Token) Bind(r *http.Request) error {
 func (info TInfo) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
-
-// func (token *Token) Render(w http.ResponseWriter, r *http.Request) error {
-// 	return nil
-// }
 
 func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 	rRouter := &Router{
@@ -131,19 +137,28 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/ui/", http.StatusFound)
 	})
-
-	r.Route("/", func(r chi.Router) {
-		r.Use(rRouter.BasicAuthentication)
-		r.Get("/checkAuth", rRouter.CheckAuthBasic)
-		r.Post("/token", rRouter.GetToken)
-		r.Post("/upload", rRouter.CreateInfo)
-		r.Post("/list", rRouter.ListInfo)
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/ui/img/favicon.ico", http.StatusFound)
 	})
 
-	r.Route("/r", func(r chi.Router) {
+	r.Route("/token", func(r chi.Router) {
+		r.Use(rRouter.BasicAuthentication)
+		r.Get("/checkAuth", rRouter.CheckAuthBasic)
+		r.Get("/", rRouter.Token)
+	})
+
+	r.Route("/", func(r chi.Router) {
 		r.Use(rRouter.BearerAuthentication)
+
+		// admin
+		r.Post("/gen", rRouter.GenToken)
+		r.Post("/upload", rRouter.CreateInfo)
+		r.Post("/list", rRouter.ListInfo)
+
 		// for development period only (unsecured!)
 		r.Get("/checkAuth", rRouter.CheckAuthBearer)
+
+		// users
 		r.Get("/g", rRouter.ReadInfo)
 		r.Get("/s", rRouter.StatInfo)
 	})
@@ -328,24 +343,61 @@ func (rRouter *Router) ui(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (rRouter *Router) GetToken(w http.ResponseWriter, r *http.Request) {
+func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		Token string `json:"token"`
 	}
 
-	var token Token
-	if err := render.Bind(r, &token); err != nil {
-		render.Render(w, r, Err400(err))
+	user, _, _ := r.BasicAuth()
+	vUser, _ := rRouter.hHandler.GetUser(user)
+
+	if vUser.GID != 1 {
+		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
+	}
+
+	token := Token{
+		Status:    "ok",
+		UID:       vUser.UID,
+		GID:       vUser.GID,
+		ValidFrom: time.Now(),
+		ValidTo:   time.Now().Add(time.Minute * 30),
 	}
 
 	tokenEncryptedBase64, err := TokenEncrypt(token, rRouter.secretKey)
 	if err != nil {
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	renderJSON(w, TResult{Token: tokenEncryptedBase64}, http.StatusOK)
+}
+
+func (rRouter *Router) GenToken(w http.ResponseWriter, r *http.Request) {
+	type TResult struct {
+		Token string `json:"token"`
+	}
+
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+
+	if token.GID != 1 {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var userToken Token
+	if err := render.Bind(r, &userToken); err != nil {
 		render.Render(w, r, Err400(err))
 		return
 	}
 
-	renderJSON(w, TResult{Token: tokenEncryptedBase64}, http.StatusCreated)
+	tokenEncryptedBase64, err := TokenEncrypt(userToken, rRouter.secretKey)
+	if err != nil {
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	renderJSON(w, TResult{Token: tokenEncryptedBase64}, http.StatusAccepted)
 }
 
 func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
@@ -353,6 +405,13 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 		Status    string `json:"status"`
 		Token     string `json:"token"`
 		TokenData Token
+	}
+
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+
+	if token.GID != 1 {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
 	}
 
 	info := TInfo{}
@@ -373,15 +432,16 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := Token{
+	userToken := Token{
 		Status:    tokenStatusOk,
 		FileID:    id,
+		GID:       100,
 		ServiceID: 1,
 		ValidFrom: vInfo.CreatedAt,
 		ValidTo:   vInfo.DeleteAt,
 	}
 
-	tokenEncryptedBase64, err := TokenEncrypt(token, rRouter.secretKey)
+	tokenEncryptedBase64, err := TokenEncrypt(userToken, rRouter.secretKey)
 	if err != nil {
 		render.Render(w, r, Err500(err))
 		return
@@ -390,44 +450,19 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 	result := TResult{
 		Status:    tokenStatusOk,
 		Token:     tokenEncryptedBase64,
-		TokenData: token,
+		TokenData: userToken,
 	}
 	renderJSON(w, result, http.StatusCreated)
 }
 
-func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
-	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
-
-	data, err := rRouter.hHandler.ReadInfo(r.Context(), token.FileID, token.ServiceID)
-	if err != nil {
-		if errors.As(err, &handler.ErrInfoNotFound) {
-			render.Render(w, r, Err404(err))
-			return
-		}
-		render.Render(w, r, Err500(err))
-		return
-	}
-
-	renderJSON(w, TInfo(data), http.StatusOK)
-}
-
-func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
-	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
-
-	data, err := rRouter.hHandler.StatInfo(r.Context(), token.FileID, token.ServiceID)
-	if err != nil {
-		if errors.As(err, &handler.ErrInfoNotFound) {
-			render.Render(w, r, Err404(err))
-			return
-		}
-		render.Render(w, r, Err500(err))
-		return
-	}
-
-	renderJSON(w, TInfo(data), http.StatusOK)
-}
-
 func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+
+	if token.GID != 1 {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	chin, err := rRouter.hHandler.ListInfo(r.Context())
 	if err != nil {
 		render.Render(w, r, Err500(err))
@@ -458,4 +493,46 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+
+	if token.GID != 100 {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	data, err := rRouter.hHandler.StatInfo(r.Context(), token.FileID, token.ServiceID)
+	if err != nil {
+		if errors.As(err, &handler.ErrInfoNotFound) {
+			render.Render(w, r, Err404(err))
+			return
+		}
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	renderJSON(w, TInfo(data), http.StatusOK)
+}
+
+func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
+	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
+
+	if token.GID != 100 {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	data, err := rRouter.hHandler.ReadInfo(r.Context(), token.FileID, token.ServiceID)
+	if err != nil {
+		if errors.As(err, &handler.ErrInfoNotFound) {
+			render.Render(w, r, Err404(err))
+			return
+		}
+		render.Render(w, r, Err500(err))
+		return
+	}
+
+	renderJSON(w, TInfo(data), http.StatusOK)
 }
