@@ -36,7 +36,7 @@ input[type="button"] {
     width: 80px;
 }
 input[type=button]:hover {
-    background-color:#06f;
+    background-color:#999;
 }
 input[type="checkbox" i] {
     display: inline-block;
@@ -47,6 +47,14 @@ input[type="checkbox" i] {
 }
 input {
     padding: 1px 2px;
+}
+
+#token-status {
+    margin-top: 10px;
+}
+
+label:after {
+    content: ": "
 }
 
 .tab-panel {

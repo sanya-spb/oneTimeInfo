@@ -153,7 +153,7 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 		// admin
 		r.Post("/gen", rRouter.GenToken)
 		r.Post("/upload", rRouter.CreateInfo)
-		r.Post("/list", rRouter.ListInfo)
+		r.Get("/list", rRouter.ListInfo)
 
 		// for development period only (unsecured!)
 		r.Get("/checkAuth", rRouter.CheckAuthBearer)
@@ -485,7 +485,7 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 			}
 			if first {
 				first = false
-				fmt.Fprintln(w, "{ \"Info\": [")
+				fmt.Fprintln(w, "{ \"data\": [")
 			} else {
 				fmt.Fprintln(w, ",")
 			}
