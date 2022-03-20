@@ -1,24 +1,8 @@
-input[type="text" i]:read-only {
-    color: darkgrey
+input, label {
+    display:block;
 }
-input[type="text" i] {
-    width: 200px;
-    height: 24px;
-    margin: 0 auto;
-    border: none;
-    border:solid 1px #ccc;
-    border-radius: 5px;
-}
-
-input[type="password" i] {
-    width: 200px;
-    height: 24px;
-    margin: 0 auto;
-    border: none;
-    border:solid 1px #ccc;
-    border-radius: 5px;
-}
-input[type="button"] {
+input[type="submit"],
+input[type="button"]{
     color:#08233e;
     padding:8px;
     margin: 2px;
@@ -33,24 +17,27 @@ input[type="button"] {
     box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
     cursor:pointer;
     display:block;
-    width: 80px;
+    padding: 10px 20px 10px 20px;
 }
-input[type=button]:hover {
-    background-color:#999;
+input[type="submit"]:hover,
+input[type="button"]:hover{
+	background: #6B9FFF;
+	color:#fff;
 }
-input[type="checkbox" i] {
-    display: inline-block;
-    width: 1.1em;
-    height: 1.1em;
-    border-radius: 5px;
-    margin-right: 5px;
+input[type="submit"].hidden,
+input[type="button"].hidden{
+        display: none;
 }
-input {
-    padding: 1px 2px;
+input[type="text" i]:read-only,
+input[type="number" i]:read-only,
+input[type="datetime" i]:read-only,
+textarea:read-only {
+    color: #666
 }
 
-#token-status {
+div.status {
     margin-top: 10px;
+    margin-right: 20px;
 }
 
 label:after {
@@ -65,12 +52,6 @@ label:after {
     display: block;
 }
 
-.disabled{
-    pointer-events:none;
-    color:gray;
-}
-
-
 body {
     font: 300 15px/1.2 "Helvetica Neue", Helvetica, Arial, sans-serif;
     background: #333;
@@ -80,7 +61,6 @@ body {
 h1 {
     margin-bottom: 20px;
     color: #fff;
-    /* text-transform: uppercase; */
     font-size: 55px;
     font-weight: 100;
     letter-spacing: 30px;
@@ -107,10 +87,10 @@ nav li {
 nav a {
     display: block;
     position: relative;
-    width: 90px;
+    width: 110px;
     height: 20px;
-    padding: 6px 10px 20px 0;
-    border-radius: 10px 30px 0 0;
+    padding: 6px 10px 20px 10px;
+    border-radius: 8px 8px 0 0;
     background: #999;
     color: #444;
     text-align: center;
@@ -119,6 +99,10 @@ nav a {
 }
 
 nav li:hover {
+    z-index: 0;
+}
+
+nav li.active:hover {
     z-index: 1;
 }
 
@@ -128,29 +112,133 @@ nav li:hover a {
     text-decoration: underline;
 }
 
-.active {
-    z-index: 2;
+nav li.active:hover a {
+    background: #fff;
+    color: #000;
+    text-decoration: underline;
 }
 
 li.active a {
-    z-index: 3;
+    z-index: 1;
     background: #fff;
     color: #000;
     text-shadow: none;
     font-weight: 500;
 }
 
-#content {
+.content {
     position: relative;
-    z-index: 1;
+    z-index: 0;
     clear: both;
     min-width: 420px;
     padding: 20px;
-    border-radius: 10px;
+    border-radius: 8px;
     box-shadow: 0px 0px 10px rgba(0,0,0,.5);
     background: #fff;
+    display: flex;
+    flex-direction: column;
 }
 
-#content p {
+.content p {
     margin: 20px 0;
+}
+
+.form-style-7{
+	max-width:400px;
+	margin:50px auto;
+	background:#fff;
+	border-radius:2px;
+	padding:20px;
+	font-family: Georgia, "Times New Roman", Times, serif;
+}
+.form-style-7 h1{
+	display: block;
+	text-align: center;
+	padding: 0;
+	margin: 0px 0px 20px 0px;
+	color: #5C5C5C;
+	font-size:x-large;
+}
+.form-style-7 ul{
+	list-style:none;
+	padding:0;
+	margin:0;	
+}
+.form-style-7 li{
+	display: block;
+	padding: 9px;
+	border:1px solid #DDDDDD;
+	margin-bottom: 30px;
+	border-radius: 3px;
+}
+.form-style-7 li:last-child{
+	border:none;
+	margin-bottom: 0px;
+	text-align: center;
+}
+.form-style-7 li > label{
+	display: block;
+	float: left;
+	margin-top: -19px;
+	background: #FFFFFF;
+	height: 14px;
+	padding: 2px 5px 2px 5px;
+	color: #B9B9B9;
+	font-size: 14px;
+	overflow: hidden;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.form-style-7 input[type="text"],
+.form-style-7 input[type="date"],
+.form-style-7 input[type="datetime"],
+.form-style-7 input[type="email"],
+.form-style-7 input[type="number"],
+.form-style-7 input[type="search"],
+.form-style-7 input[type="time"],
+.form-style-7 input[type="url"],
+.form-style-7 input[type="password"],
+.form-style-7 textarea,
+.form-style-7 select 
+{
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	width: 100%;
+	display: block;
+	outline: none;
+	border: none;
+	height: 25px;
+	line-height: 25px;
+	font-size: 16px;
+	padding: 0;
+	font-family: Georgia, "Times New Roman", Times, serif;
+}
+.form-style-7 input[type="text"]:focus,
+.form-style-7 input[type="date"]:focus,
+.form-style-7 input[type="datetime"]:focus,
+.form-style-7 input[type="email"]:focus,
+.form-style-7 input[type="number"]:focus,
+.form-style-7 input[type="search"]:focus,
+.form-style-7 input[type="time"]:focus,
+.form-style-7 input[type="url"]:focus,
+.form-style-7 input[type="password"]:focus,
+.form-style-7 textarea:focus,
+.form-style-7 select:focus 
+{
+}
+.form-style-7 li > span{
+	background: #F3F3F3;
+	display: block;
+	padding: 2px 2px 2px 6px;
+	margin: 0 -9px -9px -9px;
+	color: #C0C0C0;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+}
+.form-style-7 textarea{
+	resize:none;
+}
+.form-style-7 input[type="submit"],
+.form-style-7 input[type="button"]{
+    float: right;
 }

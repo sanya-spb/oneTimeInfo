@@ -51,8 +51,8 @@ func initInfo() map[uint]info.TInfo {
 			Descr:      "descr1",
 			Size:       111,
 			IsFile:     true,
-			CreatedAt:  time.Now().Add(-time.Hour * 24),
-			DeleteAt:   time.Now().Add(time.Hour * 24 * 14),
+			CreatedAt:  time.Now().Add(-time.Hour * 24).Round(time.Second),
+			DeleteAt:   time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
 			DataBase64: base64.StdEncoding.EncodeToString([]byte("data1")),
 		},
 		2: {
@@ -61,8 +61,8 @@ func initInfo() map[uint]info.TInfo {
 			Descr:      "descr2",
 			Size:       111,
 			IsFile:     false,
-			CreatedAt:  time.Now().Add(-time.Hour * 24),
-			DeleteAt:   time.Now().Add(time.Hour * 24 * 14),
+			CreatedAt:  time.Now().Add(-time.Hour * 24).Round(time.Second),
+			DeleteAt:   time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
 			DataBase64: base64.StdEncoding.EncodeToString([]byte("data2")),
 		},
 	}

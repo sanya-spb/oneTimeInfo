@@ -5,168 +5,200 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/ui/css/style.css" />
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" />
     <title>OTIN UI</title>
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="./js/FileSaver.js"></script>
+    <!-- jQuery Modal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />
 </head>
 <body>
     <h1>OTIN - OneTimeInfo</h1>
-    <nav>
-    <ul class="tab-list">
-        <li class="active" id="tab-login"><a class="tab-control" href="#tab-1">Login</a></li>
-        <li class="disabled" id="tab-upload"><a class="tab-control" href="#tab-2">Upload</a></li>
-        <li class="disabled" id="tab-list"><a class="tab-control" href="#tab-3">List</a></li>
-    </ul>
-    </nav>
-    <div class="tab-panel active" id="tab-1">
-        <section id="content">
-            <label for="user">login</label><br>
-            <input type="text" name="user" id="user"><br>
-            <label for="pass">password</label><br>
-            <input type="password" name="pass" id="pass"><br>
-            <input type="button" name="submit" value="submit">
-            <div id=token-status>status: none</div>
+        <section class="content" id="tab-login-content">
+            <form class="form-style-7" id="stat-secret-form">
+                <ul>
+                <li>
+                    <label for="name">File</label>
+                    <input type="text" name="name" id="stat-name" maxlength="128" readonly>
+                    <span>Name of secret file</span>
+                </li>
+                <li>
+                    <label for="descr">Description</label>
+                    <textarea name="descr" id="stat-descr" onkeyup="adjust_textarea(this)" readonly></textarea>
+                    <span>Description of secret file</span>
+                </li>
+                <li>
+                    <label for="size">Size</label>
+                    <input type="number" name="size" id="stat-size" readonly>
+                    <span>File size</span>
+                </li>
+                <li>
+                    <label for="created_at">Created at</label>
+                    <input type="datetime" name="created_at" id="stat-created_at" readonly>
+                    <span>Date and time when secret was created</span>
+                </li>
+                <li>
+                    <label for="delete_at">Delete at</label>
+                    <input type="datetime" name="delete_at" id="stat-delete_at" readonly>
+                    <span>Date and time when secret will be deleted</span>
+                </li>
+                <li>
+                    <input type="submit" class="hidden" id="stat-submit" value="Open secret" >
+                </li>
+                </ul>
+                </form>
         </section>
-    </div><div class="tab-panel" id="tab-2">
-        <section id="content">
-            <label for="id">id</label>
-            <input type="text" name="id" id="id">
-            <label for="name">name</label>
-            <input type="text" name="name" id="name">
-            <label for="descr">descr</label>
-            <input type="text" name="descr" id="descr">
-            <label for="size">size</label>
-            <input type="text" name="size" id="size">
-            <label for="as_file">as_file</label>
-            <input type="text" name="as_file" id="as_file">
-            <label for="created_at">created_at</label>
-            <input type="text" name="created_at" id="created_at">
-            <label for="delete_at">delete_at</label>
-            <input type="text" name="delete_at" id="delete_at">
-            <label for="data">data</label>
-            <input type="text" name="data" id="data">
-        </section>
-    </div><div class="tab-panel" id="tab-3">
-        <section id="content">
-            <input type="button" value="refresh" name="datatable-refresh">
-            <table id="tableID" class="display" style="width:100%">
-                <thead>
-                    <tr>
-                        <th>id</th>
-                        <th>name</th>
-                        <th>descr</th>
-                        <th>size</th>
-                        <th>as_file</th>
-                        <th>created_at</th>
-                        <th>delete_at</th>
-                    </tr>
-                </thead>
-            </table>
-        </section>
-    </div>
 
 <script>
     window.jQuery || document.write('<script src="/ui/js/jquery-3.6.0.min.js"><\/script>')
-    var token = ""
+
+    var token;
 
     $(document).ready(function() {
-        $("input[name='submit']").click(function() {
-
-            var user = $("input[name='user']").val();
-            var pass = $("input[name='pass']").val();
+        let searchParams = new URLSearchParams(window.location.search)
+        if (searchParams.has('token')) {
+            token = searchParams.get('token')
 
             $.ajax({
-                url: "/token",
+                url: "/s",
                 type: "GET",
                 dataType: "json",
-                beforeSend: function(xhr) {
-                    xhr.setRequestHeader('Authorization', basicAuth(user, pass))
+                beforeSend: function(xhr, settings) {
+                    xhr.setRequestHeader('Authorization', 'Bearer '+ token)
                 },
-                success: function(response) {
-                    token = response.token
-                    console.log(token)
-                    $("#token-status").text("status: authorized")
-                    $('#tab-upload').removeClass('disabled');
-                    $('#tab-list').removeClass('disabled');
-                    datatableInit()
+                success: function(data, status, xhr) {
+                    if (data.size>0) {
+                        $("#stat-name").val(data.name)
+                        $("#stat-descr").val(data.descr)
+                        $("#stat-size").val(data.size)
+                        $("#stat-created_at").val(data.created_at)
+                        $("#stat-delete_at").val(data.delete_at)
+                        $("#stat-submit").show("slow")
+
+                        if (data.as_file) {
+                            try {
+                                var isFileSaverSupported = !!new Blob;
+                            } catch (error) {
+                                var codeBlock = '<div class="modal">' +
+                                    '<h2>Incompatible browser</h2>' +
+                                    '<p>Your browser does not support the file saving feature, so you will not be able to save the secret to a file on your computer through this browser</p>' +
+                                    '</div>';
+                    
+                                $(codeBlock).appendTo('body').modal({
+                                    escapeClose: false,
+                                    clickClose: false,
+                                    showClose: false
+                                });
+                            }
+                        }
+                    } else {
+                        var codeBlock = '<div class="modal">' +
+                            '<h2>The secret size is zero</h2>' +
+                            '<p>Please check the source of your hyperlink</p>' +
+                            '</div>';
+            
+                        $(codeBlock).appendTo('body').modal({
+                            escapeClose: false,
+                            clickClose: false,
+                            showClose: false
+                        });
+                    }
                 },
-                
-                error: function() {
-                    $("#token-status").text("status: not authorized")
-                    $('#tab-upload').addClass('disabled');
-                    $('#tab-list').addClass('disabled');
+                error: function(xhr, status, error) {
+                    var codeBlock = '<div class="modal">' +
+                        '<h2>'+status+': '+error+'</h2>' +
+                        '<p>Please check the source of your hyperlink</p>' +
+                        '</div>';
+        
+                    $(codeBlock).appendTo('body').modal({
+                        escapeClose: false,
+                        clickClose: false,
+                        showClose: false
+                    });
                 }
             });
-        });
-    });
 
-    $('.tab-list').each(function(){
-        var $this = $(this);
-        var $tab = $this.find('li.active');
-        var $link = $tab.find('a');
-        var $panel = $($link.attr('href'));
-        $this.on('click', '.tab-control', function(e) {
-            e.preventDefault();
-            var $link = $(this);
-            var id = this.hash;
-            if (id && !$link.is('.active')) {
-                $panel.removeClass('active');
-                $tab.removeClass('active');
-                $panel = $(id).addClass('active');
-                $tab = $link.parent().addClass('active');
-            }
-        });
+            $('#stat-secret-form').submit(function(event) {
+                event.preventDefault();
+                var codeBlock = '<div class="modal">' +
+                    '<h2>You have been warned!</h2>' +
+                    '<p>The secret will be immediately deleted from the server if you reveal it now</p>' +
+                    '<p>Please confirm this or close this window</p>' +
+                    '<input type="button" value="Confirm" id="stat-confirm" onclick="showSecret()">' +
+                    '</div>';
+        
+                $(codeBlock).appendTo('body').modal({
+                    escapeClose: false,
+                    clickClose: false,
+                    // showClose: false
+                });
+            });
+
+        } else {
+            var codeBlock = '<div class="modal">' +
+                '<h2>No token found</h2>' +
+                '<p>Please check the source of your hyperlink</p>' +
+                '</div>';
+
+            $(codeBlock).appendTo('body').modal({
+                escapeClose: false,
+                clickClose: false,
+                showClose: false
+            });
+        }
     })
 
-    $("input[name='datatable-refresh']").click(function() {
-        $.ajax({
-            url: "/list",
-            type: "GET",
-            dataType: "json",
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader('Authorization', 'Bearer '+ token )
-            },
-            success:  function(data) {
-                $('#tableID').DataTable().clear().rows.add(data.data).draw();
-            }
-        })
-    })
+    function showSecret() {
+        $.modal.close()
 
-    function datatableInit() {
         $.ajax({
-            url: "/list",
+            url: "/g",
             type: "GET",
             dataType: "json",
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader('Authorization', 'Bearer '+ token )
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader('Authorization', 'Bearer '+ token)
             },
-            success:  function(data) {
-                $('#tableID').DataTable( {
-                    //"info": false,
-                    //"paging": false,
-                    "aaData": data.data,
-                    "columns": [
-                        { "data": "id" },
-                        { "data": "name" },
-                        { "data": "descr" },
-                        { "data": "size" },
-                        { "data": "as_file" },
-                        { "data": "created_at" },
-                        { "data": "delete_at" }
-                    ]
-                } )
+            success: function(data, status, xhr) {
+                if (data.as_file) {
+                    var blob = new Blob([atob(data.data)], { type: "application/octet-stream" })
+                    saveAs(blob, data.name)
+                } else {
+                    var codeBlock = '<div class="modal">' +
+                        '<form class="form-style-7" id="secret-form"><ul><li>' +
+                        '<label for="secret">Secret</label>' +
+                        '<textarea name="secret" class="secret" id="secret" readonly>'+ atob(data.data) +'</textarea>' +
+                        '<span>the contents of the secret message</span>' +
+                        '</li><li>'+
+                        '<input type="button" value="Close" onclick="$.modal.close()">'+
+                        '</li></ul></form></div>';
+            
+                    $(codeBlock).appendTo('body').modal({
+                        // escapeClose: false,
+                        clickClose: false,
+                        // showClose: false
+                    })
+    
+                }
+            },
+            error: function(xhr, status, error) {
+                var codeBlock = '<div class="modal">' +
+                    '<h2>'+status+': '+error+'</h2>' +
+                    '<p>Please check the source of your hyperlink</p>' +
+                    '</div>';
+    
+                $(codeBlock).appendTo('body').modal({
+                    escapeClose: false,
+                    clickClose: false,
+                    showClose: false
+                });
             }
         })
     }
 
-    function basicAuth(user, password) {
-        var token = user + ":" + password;
-    
-        // Base64 Encoding -> btoa
-        var hash = btoa(token); 
-    
-        return "Basic " + hash;
+    //auto expand textarea
+    function adjust_textarea(h) {
+        h.style.height = "20px"
+        h.style.height = (h.scrollHeight)+"px"
     }
 
 </script>

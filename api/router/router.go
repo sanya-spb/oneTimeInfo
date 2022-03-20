@@ -62,11 +62,11 @@ func (info *TInfo) Bind(r *http.Request) error {
 	}
 
 	if info.CreatedAt.IsZero() {
-		info.CreatedAt = time.Now()
+		info.CreatedAt = time.Now().Round(time.Second)
 	}
 
 	if info.DeleteAt.IsZero() {
-		info.DeleteAt = time.Now().Add(time.Hour * 24 * 14)
+		info.DeleteAt = time.Now().Add(time.Hour * 24 * 14).Round(time.Second)
 	}
 
 	return nil
@@ -93,9 +93,9 @@ func (token *Token) Bind(r *http.Request) error {
 
 	if token.ValidTo.IsZero() {
 		if token.GID == 1 {
-			token.ValidTo = time.Now().Add(time.Minute * 30)
+			token.ValidTo = time.Now().Add(time.Minute * 30).Round(time.Second)
 		} else {
-			token.ValidTo = time.Now().Add(time.Hour * 24 * 14)
+			token.ValidTo = time.Now().Add(time.Hour * 24 * 14).Round(time.Second)
 		}
 	}
 
@@ -126,8 +126,9 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "HEAD", "OPTION"},
+		// AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   []string{"https://*", "http://*", "file://"},
+		AllowedMethods:   []string{"GET", "POST"},
 		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "DNT", "Host", "Origin", "Pragma", "Referer"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,

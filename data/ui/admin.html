@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/ui/css/style.css" />
+    <title>OTIN UI</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- jQuery dataTables -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" />
+    <!-- jQuery Modal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />
+</head>
+<body>
+    <h1>OTIN - OneTimeInfo</h1>
+    <form class="form-style-7 modal" id="login-form">
+        <ul>
+            <li>
+                <label for="user">user</label>
+                <input type="text" name="user" id="user">
+                <span>enter username</span>
+            </li>
+            <li>
+                <label for="pass">password</label>
+                <input type="password" name="pass" id="pass">
+                <span>enter password</span>
+            </li>
+            <li>
+                <input type="submit" id="stat-submit" value="login" >
+            </li>
+        </ul>
+    </form>
+    <nav>
+    <ul class="tab-list">
+        <li class="active" id="tab-list"><a class="tab-control" href="#tab-1" id="tab-list-link">List secrets</a></li>
+        <li id="tab-message"><a class="tab-control" href="#tab-2">New message</a></li>
+        <li id="tab-file"><a class="tab-control" href="#tab-3">New file</a></li>
+    </ul>
+    </nav>
+    <div class="tab-panel active" id="tab-1">
+        <section class="content" id="tab-list-content">
+            <div>
+                <input type="button" value="refresh" id="datatable-refresh">
+            </div><div>
+            <table id="tableID" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>id</th>
+                        <th>name</th>
+                        <th>descr</th>
+                        <th>size</th>
+                        <th>as_file</th>
+                        <th>created_at</th>
+                        <th>delete_at</th>
+                    </tr>
+                </thead>
+            </table>
+            </div>
+        </section>
+    </div>
+    <div class="tab-panel" id="tab-2">
+        <section class="content" id="tab-new-message">
+            <form class="form-style-7" id="new-message-form">
+                <ul>
+                    <li>
+                        <label for="name">File</label>
+                        <input type="text" name="name" id="new-message-form-name" maxlength="128">
+                        <span>Name of secret</span>
+                    </li>
+                    <li>
+                        <label for="descr">Description</label>
+                        <textarea name="descr" id="new-message-form-descr" onkeyup="adjust_textarea(this)"></textarea>
+                        <span>Description of secret</span>
+                    </li>
+                    <li>
+                        <label for="created_at">Created at</label>
+                        <input type="datetime" name="created_at" id="new-message-form-created_at">
+                        <span>Date and time when secret was created</span>
+                    </li>
+                    <li>
+                        <label for="delete_at">Delete at</label>
+                        <input type="datetime" name="delete_at" id="new-message-form-delete_at">
+                        <span>Date and time when secret will be deleted</span>
+                    </li>
+                    <li>
+                        <label for="data">Secret</label>
+                        <textarea name="data" id="new-message-form-data" onkeyup="adjust_textarea(this)"></textarea>
+                        <span>the contents of the secret message</span>
+                    </li>
+                    <li>
+                        <input type="submit" id="submit-new-message" value="Create secret message">
+                    </li>
+                </ul>
+            </form>
+        </section>
+    </div>
+    <div class="tab-panel" id="tab-3">
+        <section class="content" id="tab-new-file">
+            <form class="form-style-7" id="new-file-form">
+                <ul>
+                    <li>
+                        <label for="name">File</label>
+                        <input type="file" name="name" id="new-file-form-name">
+                        <span>Name of secret</span>
+                    </li>
+                    <li>
+                        <label for="descr">Description</label>
+                        <textarea name="descr" id="new-file-form-descr" onkeyup="adjust_textarea(this)"></textarea>
+                        <span>Description of secret</span>
+                    </li>
+                    <li>
+                        <label for="created_at">Created at</label>
+                        <input type="datetime" name="created_at" id="new-file-form-created_at">
+                        <span>Date and time when secret was created</span>
+                    </li>
+                    <li>
+                        <label for="delete_at">Delete at</label>
+                        <input type="datetime" name="delete_at" id="new-file-form-delete_at">
+                        <span>Date and time when secret will be deleted</span>
+                    </li>
+                    <li>
+                        <input type="submit" id="submit-new-file" value="Create secret file">
+                    </li>
+                </ul>
+            </form>
+            <form class="form-style-7 modal" id="new-form-result">
+                <ul>
+                    <li>
+                        <label for="link">link</label>
+                        <input type="text" name="id" id="new-form-result-link" readonly>
+                        <span>link</span>
+                    </li>
+                    <li>
+                        <label for="valid_from">Valid from</label>
+                        <input type="datetime" name="valid_from" id="new-form-result-valid_from" readonly>
+                        <span>Date and time when secret was created</span>
+                    </li>
+                    <li>
+                        <label for="valid_to">Valid to</label>
+                        <input type="datetime" name="valid_to" id="new-form-result-valid_to" readonly>
+                        <span>Date and time when secret will be deleted</span>
+                    </li>
+                    <li>
+                        <input type="button" onclick="$.modal.close()" value="Close">
+                    </li>
+                </ul>
+            </form>
+        </section>
+    </div>
+
+<script>
+    window.jQuery || document.write('<script src="/ui/js/jquery-3.6.0.min.js"><\/script>')
+    var token = ""
+    var datatableInited = false
+    const urlView = "http://localhost:8181/ui/"
+
+    $(document).ready(function() {
+
+        showLoginModal()
+
+        $("#tab-list-link").on('click', function(event) { 
+            event.preventDefault()
+            if (!datatableInited) {
+                datatableInit()
+            } else {
+                datatableRefresh()
+            }
+        })
+
+        $("input[id='datatable-refresh']").on('click', function(event) { 
+            event.preventDefault()
+            datatableRefresh(event)
+        })
+
+        $("input[id='submit-new-message']").on('click', function(event) { 
+            event.preventDefault()
+            submitNewMessage()
+        })
+
+        $("input[id='submit-new-file']").on('click', function(event) { 
+            event.preventDefault()
+            submitNewFile()
+        })
+    });
+
+    $('.tab-list').each(function(){
+        var $this = $(this);
+        var $tab = $this.find('li.active');
+        var $link = $tab.find('a');
+        var $panel = $($link.attr('href'));
+        $this.on('click', '.tab-control', function(e) {
+            e.preventDefault();
+            var $link = $(this);
+            var id = this.hash;
+            if (id && !$link.is('.active')) {
+                $panel.removeClass('active');
+                $tab.removeClass('active');
+                $panel = $(id).addClass('active');
+                $tab = $link.parent().addClass('active');
+            }
+        });
+    })
+
+    function submitNewMessage() {
+        var j = {
+            "name": $("input[id='new-message-form-name']").val(),
+            "descr": $("#new-message-form-descr").val(),
+            // "as_file": false,
+            "data": btoa($("#new-message-form-data").val()),
+        };
+        if ($("input[id='new-message-form-created_at']").val()!="") {
+            j[created_at]=$("input[id='new-message-form-created_at']").val()
+        }
+        if ($("input[id='new-message-form-delete_at']").val()!="") {
+            j[delete_at]=$("input[id='new-message-form-delete_at']").val()
+        }
+
+        $.ajax({
+            url: "/upload",
+            type: "POST",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(j),
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader('Authorization', 'Bearer '+ token )
+            },
+            success: function(data, status, xhr) {
+                $('#new-form-result').modal()
+                $("#new-form-result-link").val(urlView+"?token="+encodeURIComponent(data.token))
+                $("#new-form-result-valid_from").val(data.TokenData.valid_from)
+                $("#new-form-result-valid_to").val(data.TokenData.valid_to)
+            },
+            error: function(xhr, status, error) {
+                if (xhr.status==401) {
+                    showLoginModal()
+                } else {
+                    var codeBlock = '<div class="modal">' +
+                        '<h2>'+status+': '+error+'</h2>' +
+                        '<p>Please check the contents of fields</p>' +
+                        '</div>';
+        
+                    $(codeBlock).appendTo('body').modal();
+                }
+            }
+        })
+    }
+
+    function submitNewFile() {
+        var file = $("input[id='new-file-form-name']").get(0).files[0]
+        if(file){
+            var reader = new FileReader();
+ 
+            reader.onload = function(){
+                var j = {
+                    "name": file.name,
+                    "descr": $("#new-file-form-descr").val(),
+                    "as_file": true,
+                    "data": btoa(reader.result),
+                };
+                if ($("input[id='new-message-form-created_at']").val()!="") {
+                    j[created_at]=$("input[id='new-message-form-created_at']").val()
+                }
+                if ($("input[id='new-message-form-delete_at']").val()!="") {
+                    j[delete_at]=$("input[id='new-message-form-delete_at']").val()
+                }
+        
+                $.ajax({
+                    url: "/upload",
+                    type: "POST",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify(j),
+                    beforeSend: function(xhr, settings) {
+                        xhr.setRequestHeader('Authorization', 'Bearer '+ token )
+                    },
+                    success: function(data, status, xhr) {
+                        $('#new-form-result').modal()
+                        $("#new-form-result-link").val(urlView+"?token="+encodeURIComponent(data.token))
+                        $("#new-form-result-valid_from").val(data.TokenData.valid_from)
+                        $("#new-form-result-valid_to").val(data.TokenData.valid_to)
+                    },
+                    error: function(xhr, status, error) {
+                        if (xhr.status==401) {
+                            showLoginModal()
+                        } else {
+                            var codeBlock = '<div class="modal">' +
+                                '<h2>'+status+': '+error+'</h2>' +
+                                '<p>Please check the contents of fields</p>' +
+                                '</div>';
+                
+                            $(codeBlock).appendTo('body').modal();
+                        }
+                    }
+                })
+            }
+ 
+            reader.readAsBinaryString(file);
+        }
+    }
+
+    function datatableRefresh() {
+        $.ajax({
+            url: "/list",
+            type: "GET",
+            dataType: "json",
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader('Authorization', 'Bearer '+ token )
+            },
+            success: function(data, status, xhr) {
+                $('#tableID').DataTable().clear().rows.add(data.data).draw();
+            },
+            error: function(xhr, status, error) {
+                if (xhr.status==401) {
+                    showLoginModal()
+                } else {
+                    var codeBlock = '<div class="modal">' +
+                        '<h2>'+status+': '+error+'</h2>' +
+                        '<p>Something went wrong as expected</p>' +
+                        '</div>';
+        
+                    $(codeBlock).appendTo('body').modal();
+                }
+            }
+        })
+    }
+
+    function datatableInit() {
+        $.ajax({
+            url: "/list",
+            type: "GET",
+            dataType: "json",
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader('Authorization', 'Bearer '+ token )
+            },
+            success:  function(data, status, xhr) {
+                datatableInited=true
+                $('#tableID').DataTable( {
+                    //"info": false,
+                    //"paging": false,
+                    "aaData": data.data,
+                    "columns": [
+                        { "data": "id" },
+                        { "data": "name" },
+                        { "data": "descr" },
+                        { "data": "size" },
+                        { "data": "as_file" },
+                        { "data": "created_at" },
+                        { "data": "delete_at" }
+                    ]
+                } )
+            }
+        })
+    }
+    function showLoginModal() {
+        $('#login-form').modal({
+            escapeClose: false,
+            clickClose: false,
+            showClose: false
+        })
+
+        $('#login-form').submit(function(event) {
+            event.preventDefault();
+            var user = $("input[name='user']").val();
+            var pass = $("input[name='pass']").val();
+
+            $.ajax({
+                url: "/token",
+                type: "GET",
+                dataType: "json",
+                beforeSend: function(xhr, settings) {
+                    xhr.setRequestHeader('Authorization', basicAuth(user, pass))
+                },
+                success: function(data, status, xhr) {
+                    token = data.token
+                    if (!datatableInited) {
+                        datatableInit()
+                    } else {
+                        datatableRefresh()
+                    }
+                    $.modal.close()
+                },
+                
+                error: function(xhr, status, error) {
+                    // $("#token-status").text("status: not authorized")
+                    // $('#tab-upload').addClass('disabled');
+                    // $('#tab-list').addClass('disabled');
+                }
+            });
+        });
+    }
+    function basicAuth(user, password) {
+        var token = user + ":" + password;
+    
+        // Base64 Encoding -> btoa
+        var hash = btoa(token); 
+    
+        return "Basic " + hash;
+    }
+
+    //auto expand textarea
+    function adjust_textarea(h) {
+        h.style.height = "20px";
+        h.style.height = (h.scrollHeight)+"px";
+    }
+
+</script>
+</body>
+</html>
