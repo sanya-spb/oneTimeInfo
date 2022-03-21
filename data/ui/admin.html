@@ -150,7 +150,7 @@
     window.jQuery || document.write('<script src="/ui/js/jquery-3.6.0.min.js"><\/script>')
     var token = ""
     var datatableInited = false
-    const urlView = "http://localhost:8181/ui/"
+    const urlView = location.protocol + '//' + location.host + '/ui/'
 
     $(document).ready(function() {
 

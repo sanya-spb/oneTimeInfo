@@ -127,7 +127,7 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 
 	r.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"*"},
-		AllowedOrigins:   []string{"https://*", "http://*", "file://"},
+		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST"},
 		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "DNT", "Host", "Origin", "Pragma", "Referer"},
 		ExposedHeaders:   []string{"Link"},
@@ -196,7 +196,7 @@ func (rRouter *Router) CheckAuthBasic(w http.ResponseWriter, r *http.Request) {
 	vUser, _ := rRouter.hHandler.GetUser(user)
 
 	result := TResult{
-		Status: "ok",
+		Status: tokenStatusOk,
 		User:   user,
 		UID:    vUser.UID,
 		GID:    vUser.GID,
@@ -358,7 +358,7 @@ func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := Token{
-		Status:    "ok",
+		Status:    tokenStatusOk,
 		UID:       vUser.UID,
 		GID:       vUser.GID,
 		ValidFrom: time.Now(),

@@ -160,7 +160,6 @@
             },
             success: function(data, status, xhr) {
                 if (data.as_file) {
-                    console.log(data.data)
                     //Convert the Byte Data to BLOB object.
                     var blob = new Blob([base64ToArrayBuffer(data.data)], { type: "application/octet-stream" });
  

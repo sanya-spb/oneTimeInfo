@@ -1,6 +1,3 @@
-input, label {
-    display:block;
-}
 input[type="submit"],
 input[type="button"]{
     color:#08233e;
@@ -32,16 +29,12 @@ input[type="text" i]:read-only,
 input[type="number" i]:read-only,
 input[type="datetime" i]:read-only,
 textarea:read-only {
-    color: #666
+    color: #666;
 }
 
 div.status {
     margin-top: 10px;
     margin-right: 20px;
-}
-
-label:after {
-    content: ": "
 }
 
 .tab-panel {
@@ -179,6 +172,16 @@ li.active a {
 	border:none;
 	margin-bottom: 0px;
 	text-align: center;
+}
+.form-style-7 li > input,
+.form-style-7 li > label {
+    display:block;
+}
+.form-style-7 li > label:first-letter {
+    text-transform: uppercase;
+}
+.form-style-7 li > label:after {
+    content: ": ";
 }
 .form-style-7 li > label{
 	display: block;
