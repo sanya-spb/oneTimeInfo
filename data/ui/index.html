@@ -160,29 +160,24 @@
             },
             success: function(data, status, xhr) {
                 if (data.as_file) {
-                    //var blob = new Blob([atob(data.data)], { type: "application/octet-stream" })
-                    //window.saveAs(blob, data.name)
-
-                    //var uintArray = Base64Binary.decode(data.data);
-                    //var blob = new Blob([uintArray]);
-                    //window.saveAs(blob, data.name);
-
-                    var bytes = new Array(atob(data.data).length);
-                    for (var i = 0; i < atob(data.data).length; i++) {
-                        bytes[i] = atob(data.data).charCodeAt(i);
+                    console.log(data.data)
+                    //Convert the Byte Data to BLOB object.
+                    var blob = new Blob([base64ToArrayBuffer(data.data)], { type: "application/octet-stream" });
+ 
+                    //Check the Browser type and download the File.
+                    var isIE = false || !!document.documentMode;
+                    if (isIE) {
+                        window.navigator.msSaveBlob(blob, data.name);
+                    } else {
+                        var url = window.URL || window.webkitURL;
+                        link = url.createObjectURL(blob);
+                        var a = $("<a />");
+                        a.attr("download", data.name);
+                        a.attr("href", link);
+                        $("body").append(a);
+                        a[0].click();
+                        $("body").remove(a);
                     }
-                    bData = new Uint8Array(bytes);
-
-                    var blob = new Blob([bData], {type: "application/octet-stream"});
-                    let objectURL = window.URL.createObjectURL(blob);
-                    let anchor = document.createElement('a');
-                  
-                    anchor.href = objectURL;
-                    anchor.download = data.name;
-                    anchor.click();
-                  
-                    URL.revokeObjectURL(objectURL);
-
                 } else {
                     var codeBlock = '<div class="modal">' +
                         '<form class="form-style-7" id="secret-form"><ul><li>' +
@@ -214,6 +209,16 @@
                 });
             }
         })
+    }
+
+    function base64ToArrayBuffer(base64) {
+        var binary_string = window.atob(base64);
+        var len = binary_string.length;
+        var bytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) {
+            bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes.buffer;
     }
 
     //auto expand textarea
