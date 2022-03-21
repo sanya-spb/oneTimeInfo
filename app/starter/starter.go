@@ -42,5 +42,5 @@ func (app *App) Serve(ctx context.Context, wg *sync.WaitGroup, hs HTTPServer) {
 // print welcome message
 func (app *App) Welcome() {
 	log.Printf("Starting otin-backend!\n\nVersion: %s [%s@%s]\nCopyright: %s\n\n", app.Version.Version, app.Version.Commit, app.Version.BuildTime, app.Version.Copyright)
-	log.Printf("Config dump: %+v\n", app.Config)
+	// log.Printf("Config dump: %+v\n", app.Config)
 }

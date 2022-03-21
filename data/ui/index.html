@@ -122,8 +122,8 @@
                 event.preventDefault();
                 var codeBlock = '<div class="modal">' +
                     '<h2>You have been warned!</h2>' +
-                    '<p>The secret will be immediately deleted from the server if you reveal it now</p>' +
-                    '<p>Please confirm this or close this window</p>' +
+                    '<p>The secret will be immediately deleted from the server when you open it</p>' +
+                    '<p>Please confirm or close this window</p>' +
                     '<input type="button" value="Confirm" id="stat-confirm" onclick="showSecret()">' +
                     '</div>';
         
@@ -160,8 +160,29 @@
             },
             success: function(data, status, xhr) {
                 if (data.as_file) {
-                    var blob = new Blob([atob(data.data)], { type: "application/octet-stream" })
-                    saveAs(blob, data.name)
+                    //var blob = new Blob([atob(data.data)], { type: "application/octet-stream" })
+                    //window.saveAs(blob, data.name)
+
+                    //var uintArray = Base64Binary.decode(data.data);
+                    //var blob = new Blob([uintArray]);
+                    //window.saveAs(blob, data.name);
+
+                    var bytes = new Array(atob(data.data).length);
+                    for (var i = 0; i < atob(data.data).length; i++) {
+                        bytes[i] = atob(data.data).charCodeAt(i);
+                    }
+                    bData = new Uint8Array(bytes);
+
+                    var blob = new Blob([bData], {type: "application/octet-stream"});
+                    let objectURL = window.URL.createObjectURL(blob);
+                    let anchor = document.createElement('a');
+                  
+                    anchor.href = objectURL;
+                    anchor.download = data.name;
+                    anchor.click();
+                  
+                    URL.revokeObjectURL(objectURL);
+
                 } else {
                     var codeBlock = '<div class="modal">' +
                         '<form class="form-style-7" id="secret-form"><ul><li>' +

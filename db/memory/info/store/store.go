@@ -24,7 +24,7 @@ func initUsers() map[string]info.TUser {
 	return map[string]info.TUser{
 		"admin": {
 			Login:    "admin",
-			Password: "111",
+			Password: "admin",
 			UID:      1000,
 			GID:      1,
 		},
@@ -44,26 +44,30 @@ func initUsers() map[string]info.TUser {
 }
 
 func initInfo() map[uint]info.TInfo {
+	data := map[uint][]byte{
+		1: []byte("Text data1\nText data2\n"),
+		2: []byte("test message:\nPIN: 1234"),
+	}
 	return map[uint]info.TInfo{
 		1: {
 			FileID:     1,
-			Name:       "file1",
-			Descr:      "descr1",
-			Size:       111,
+			Name:       "testFile1.txt",
+			Descr:      "file for testing",
+			Size:       len(data[1]),
 			IsFile:     true,
 			CreatedAt:  time.Now().Add(-time.Hour * 24).Round(time.Second),
 			DeleteAt:   time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
-			DataBase64: base64.StdEncoding.EncodeToString([]byte("data1")),
+			DataBase64: base64.StdEncoding.EncodeToString(data[1]),
 		},
 		2: {
 			FileID:     2,
-			Name:       "message2",
-			Descr:      "descr2",
-			Size:       111,
+			Name:       "message",
+			Descr:      "message for testing",
+			Size:       len(data[2]),
 			IsFile:     false,
 			CreatedAt:  time.Now().Add(-time.Hour * 24).Round(time.Second),
 			DeleteAt:   time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
-			DataBase64: base64.StdEncoding.EncodeToString([]byte("data2")),
+			DataBase64: base64.StdEncoding.EncodeToString(data[2]),
 		},
 	}
 }

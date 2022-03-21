@@ -66,9 +66,9 @@
             <form class="form-style-7" id="new-message-form">
                 <ul>
                     <li>
-                        <label for="name">File</label>
-                        <input type="text" name="name" id="new-message-form-name" maxlength="128">
-                        <span>Name of secret</span>
+                        <label for="data">Secret</label>
+                        <textarea name="data" id="new-message-form-data" onkeyup="adjust_textarea(this)"></textarea>
+                        <span>the contents of the secret message</span>
                     </li>
                     <li>
                         <label for="descr">Description</label>
@@ -86,12 +86,7 @@
                         <span>Date and time when secret will be deleted</span>
                     </li>
                     <li>
-                        <label for="data">Secret</label>
-                        <textarea name="data" id="new-message-form-data" onkeyup="adjust_textarea(this)"></textarea>
-                        <span>the contents of the secret message</span>
-                    </li>
-                    <li>
-                        <input type="submit" id="submit-new-message" value="Create secret message">
+                        <input type="submit" id="submit-new-message" value="Create link">
                     </li>
                 </ul>
             </form>
@@ -122,7 +117,7 @@
                         <span>Date and time when secret will be deleted</span>
                     </li>
                     <li>
-                        <input type="submit" id="submit-new-file" value="Create secret file">
+                        <input type="submit" id="submit-new-file" value="Create link">
                     </li>
                 </ul>
             </form>
@@ -206,7 +201,7 @@
 
     function submitNewMessage() {
         var j = {
-            "name": $("input[id='new-message-form-name']").val(),
+            "name": "message",
             "descr": $("#new-message-form-descr").val(),
             // "as_file": false,
             "data": btoa($("#new-message-form-data").val()),

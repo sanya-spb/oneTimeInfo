@@ -144,7 +144,7 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 
 	r.Route("/token", func(r chi.Router) {
 		r.Use(rRouter.BasicAuthentication)
-		r.Get("/checkAuth", rRouter.CheckAuthBasic)
+		// r.Get("/checkAuth", rRouter.CheckAuthBasic)
 		r.Get("/", rRouter.Token)
 	})
 
@@ -157,7 +157,7 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 		r.Get("/list", rRouter.ListInfo)
 
 		// for development period only (unsecured!)
-		r.Get("/checkAuth", rRouter.CheckAuthBearer)
+		// r.Get("/checkAuth", rRouter.CheckAuthBearer)
 
 		// users
 		r.Get("/g", rRouter.ReadInfo)

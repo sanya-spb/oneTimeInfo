@@ -143,6 +143,10 @@ li.active a {
     margin: 20px 0;
 }
 
+#login-form {
+    width: 275px;
+}
+
 .form-style-7{
 	max-width:400px;
 	margin:50px auto;
@@ -188,6 +192,7 @@ li.active a {
 	overflow: hidden;
 	font-family: Arial, Helvetica, sans-serif;
 }
+.form-style-7 input[type="file"],
 .form-style-7 input[type="text"],
 .form-style-7 input[type="date"],
 .form-style-7 input[type="datetime"],
@@ -213,6 +218,7 @@ li.active a {
 	padding: 0;
 	font-family: Georgia, "Times New Roman", Times, serif;
 }
+.form-style-7 input[type="file"]:focus,
 .form-style-7 input[type="text"]:focus,
 .form-style-7 input[type="date"]:focus,
 .form-style-7 input[type="datetime"]:focus,
