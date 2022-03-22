@@ -17,6 +17,7 @@
 <body>
     <h1>OTIN - OneTimeInfo</h1>
     <form class="form-style-7 modal" id="login-form">
+        <h1>Login</h1>
         <ul>
             <li>
                 <label for="user">user</label>
@@ -36,8 +37,8 @@
     <nav>
     <ul class="tab-list">
         <li class="active" id="tab-list"><a class="tab-control" href="#tab-1" id="tab-list-link">List secrets</a></li>
-        <li id="tab-message"><a class="tab-control" href="#tab-2">New message</a></li>
-        <li id="tab-file"><a class="tab-control" href="#tab-3">New file</a></li>
+        <li id="tab-message"><a class="tab-control" href="#tab-2">+ message</a></li>
+        <li id="tab-file"><a class="tab-control" href="#tab-3">+ file</a></li>
     </ul>
     </nav>
     <div class="tab-panel active" id="tab-1">
@@ -66,12 +67,12 @@
             <form class="form-style-7" id="new-message-form">
                 <ul>
                     <li>
-                        <label for="data">Secret</label>
+                        <label class="required" for="data">Secret</label>
                         <textarea name="data" id="new-message-form-data" onkeyup="adjust_textarea(this)"></textarea>
                         <span>the contents of the secret message</span>
                     </li>
                     <li>
-                        <label for="descr">Description</label>
+                        <label class="required" for="descr">Description</label>
                         <textarea name="descr" id="new-message-form-descr" onkeyup="adjust_textarea(this)"></textarea>
                         <span>Description of secret</span>
                     </li>
@@ -97,12 +98,12 @@
             <form class="form-style-7" id="new-file-form">
                 <ul>
                     <li>
-                        <label for="name">File</label>
+                        <label class="required" for="name">File</label>
                         <input type="file" name="name" id="new-file-form-name">
                         <span>Name of secret</span>
                     </li>
                     <li>
-                        <label for="descr">Description</label>
+                        <label class="required" for="descr">Description</label>
                         <textarea name="descr" id="new-file-form-descr" onkeyup="adjust_textarea(this)"></textarea>
                         <span>Description of secret</span>
                     </li>
@@ -122,6 +123,7 @@
                 </ul>
             </form>
             <form class="form-style-7 modal" id="new-form-result">
+                <h1>Accepted</h1>
                 <ul>
                     <li>
                         <label for="link">link</label>
@@ -178,6 +180,12 @@
         $("input[id='submit-new-file']").on('click', function(event) { 
             event.preventDefault()
             submitNewFile()
+        })
+
+        $("#new-form-result-link").focus(function(event) {
+            var $this = $(this);
+            $this.select()
+            document.execCommand("copy")
         })
     });
 

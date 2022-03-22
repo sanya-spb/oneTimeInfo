@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/ui/css/style.css" />
     <title>OTIN UI</title>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="./js/FileSaver.js"></script>
+    <!-- <script src="./js/FileSaver.js"></script> -->
     <!-- jQuery Modal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />
@@ -48,7 +48,18 @@
                 </ul>
                 </form>
         </section>
-
+        <form class="form-style-7 modal" id="secret-form">
+            <ul>
+                <li>
+                    <label for="secret">Secret</label>
+                    <textarea name="secret" class="secret" id="secret" readonly></textarea>
+                    <span>the contents of the secret message</span>
+                </li>
+                <li>
+                    <input type="button" value="Close" onclick="$.modal.close()">
+                </li>
+            </ul>
+        </form>
 <script>
     window.jQuery || document.write('<script src="/ui/js/jquery-3.6.0.min.js"><\/script>')
 
@@ -150,6 +161,7 @@
 
     function showSecret() {
         $.modal.close()
+        $("#stat-submit").hide()
 
         $.ajax({
             url: "/g",
@@ -178,21 +190,12 @@
                         $("body").remove(a);
                     }
                 } else {
-                    var codeBlock = '<div class="modal">' +
-                        '<form class="form-style-7" id="secret-form"><ul><li>' +
-                        '<label for="secret">Secret</label>' +
-                        '<textarea name="secret" class="secret" id="secret" readonly>'+ atob(data.data) +'</textarea>' +
-                        '<span>the contents of the secret message</span>' +
-                        '</li><li>'+
-                        '<input type="button" value="Close" onclick="$.modal.close()">'+
-                        '</li></ul></form></div>';
-            
-                    $(codeBlock).appendTo('body').modal({
+                    $('#secret-form').modal({
                         // escapeClose: false,
                         clickClose: false,
                         // showClose: false
                     })
-    
+                    $('#secret').val(atob(data.data))
                 }
             },
             error: function(xhr, status, error) {

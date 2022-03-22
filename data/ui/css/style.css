@@ -155,6 +155,8 @@ li.active a {
 	margin: 0px 0px 20px 0px;
 	color: #5C5C5C;
 	font-size:x-large;
+    text-shadow: none;
+    letter-spacing: normal;
 }
 .form-style-7 ul{
 	list-style:none;
@@ -165,20 +167,32 @@ li.active a {
 	display: block;
 	padding: 9px;
 	border:1px solid #DDDDDD;
-	margin-bottom: 30px;
+	margin-bottom: 25px;
 	border-radius: 3px;
+}
+
+#secret-form textarea {
+    height: 7em;
+}
+#secret-form li:first-child{
+	margin-top: 20px;
 }
 .form-style-7 li:last-child{
 	border:none;
+    margin-top: -15px;
 	margin-bottom: 0px;
 	text-align: center;
 }
-.form-style-7 li > input,
-.form-style-7 li > label {
-    display:block;
-}
 .form-style-7 li > label:first-letter {
     text-transform: uppercase;
+}
+.modal h2:first-letter {
+    text-transform: uppercase;
+}
+.form-style-7 li > label.required:before {
+    color: red;
+    content: "*";
+    order: 1;
 }
 .form-style-7 li > label:after {
     content: ": ";
