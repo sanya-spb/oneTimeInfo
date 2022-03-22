@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -40,11 +39,11 @@ func (c *Config) loadConfFile(path string) error {
 					return err
 				}
 			default:
-				return fmt.Errorf("Unknown file format: %s", path)
+				return errors.New("Unknown file format")
 			}
 		}
 	} else {
-		return fmt.Errorf("The configuration file is missing: %s", path)
+		return errors.New("The configuration file is missing")
 	}
 	return nil
 }
@@ -52,10 +51,11 @@ func (c *Config) loadConfFile(path string) error {
 // Init config
 func NewConfig(ctx context.Context, log *logrus.Logger) *Config {
 	var result *Config = new(Config)
-	flag.StringVar(&result.ConfigFile, "config", GetEnv("CONFIG", ""), "Configuration settings file")
+
+	flag.StringVar(&result.ConfigFile, "config", GetEnv("CONFIG", ""), "Config file")
 	flag.StringVar(&result.SecretKeyBase64, "secret", GetEnv("SECRET", ""), "Secret key")
 	flag.BoolVar(&result.Debug, "debug", GetEnvBool("DEBUG", false), "Output of detailed debugging information")
-	flag.StringVar(&result.Listen, "listen", GetEnv("LISTEN", ":80"), "listen addr:port")
+	flag.StringVar(&result.Listen, "listen", GetEnv("LISTEN", ":8080"), "listen addr:port")
 	flag.StringVar(&result.LogAccess, "log-access", GetEnv("LOG_ACCESS", ""), "Log file")
 	flag.StringVar(&result.LogErrors, "log-errors", GetEnv("LOG_ERRORS", ""), "Log file for errors")
 	// flag.Uint64Var(&result.FilterTimeout, "filter-timeout", GetEnvUInt("FILTER_TIMEOUT", 1000), "Timeout to filtering data, ms")
@@ -63,9 +63,12 @@ func NewConfig(ctx context.Context, log *logrus.Logger) *Config {
 
 	if result.ConfigFile != "" {
 		if err := result.loadConfFile(result.ConfigFile); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
+			log.Fatalf("Config file reading error: %s", err.Error())
 		}
+	}
+
+	if result.SecretKeyBase64 == "" {
+		log.Fatal("secret can not be null")
 	}
 
 	secretKeyBytes, err := base64.StdEncoding.DecodeString(result.SecretKeyBase64)

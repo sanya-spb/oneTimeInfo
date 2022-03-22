@@ -38,7 +38,11 @@ type Token struct {
 	ValidTo   time.Time `json:"valid_to"`
 }
 
-const tokenStatusOk string = "ok"
+const (
+	tokenStatusOk string = "ok"
+	adminGID             = 1
+	userGID              = 100
+)
 
 type TInfo handler.TInfo
 
@@ -75,24 +79,24 @@ func (info *TInfo) Bind(r *http.Request) error {
 func (token *Token) Bind(r *http.Request) error {
 	token.Status = tokenStatusOk
 
-	if !(token.GID > 0) {
+	if !(token.GID >= 0) {
 		return errors.New("missing required field: gid")
 	}
 
-	if !(token.FileID > 0) {
+	if !(token.FileID >= 0) {
 		return errors.New("missing required field: file")
 	}
 
-	if !(token.ServiceID > 0) {
+	if !(token.ServiceID >= 0) {
 		return errors.New("missing required field: service")
 	}
 
 	if token.ValidFrom.IsZero() {
-		token.ValidFrom = time.Now()
+		token.ValidFrom = time.Now().Round(time.Second)
 	}
 
 	if token.ValidTo.IsZero() {
-		if token.GID == 1 {
+		if token.GID == adminGID {
 			token.ValidTo = time.Now().Add(time.Minute * 30).Round(time.Second)
 		} else {
 			token.ValidTo = time.Now().Add(time.Hour * 24 * 14).Round(time.Second)
@@ -152,7 +156,7 @@ func NewRouter(secretKey [32]byte, hHandler *handler.Handler) *Router {
 		r.Use(rRouter.BearerAuthentication)
 
 		// admin
-		r.Post("/gen", rRouter.GenToken)
+		// r.Post("/set-token", rRouter.SetToken)
 		r.Post("/upload", rRouter.CreateInfo)
 		r.Get("/list", rRouter.ListInfo)
 
@@ -352,7 +356,7 @@ func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 	user, _, _ := r.BasicAuth()
 	vUser, _ := rRouter.hHandler.GetUser(user)
 
-	if vUser.GID != 1 {
+	if vUser.GID != adminGID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -374,14 +378,14 @@ func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, TResult{Token: tokenEncryptedBase64}, http.StatusOK)
 }
 
-func (rRouter *Router) GenToken(w http.ResponseWriter, r *http.Request) {
+func (rRouter *Router) SetToken(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		Token string `json:"token"`
 	}
 
 	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	if token.GID != 1 {
+	if token.GID != adminGID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -389,6 +393,11 @@ func (rRouter *Router) GenToken(w http.ResponseWriter, r *http.Request) {
 	var userToken Token
 	if err := render.Bind(r, &userToken); err != nil {
 		render.Render(w, r, Err400(err))
+		return
+	}
+
+	if userToken.GID != userGID {
+		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
@@ -410,7 +419,7 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 
 	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	if token.GID != 1 {
+	if token.GID != adminGID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -459,7 +468,7 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	if token.GID != 1 {
+	if token.GID != adminGID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -499,7 +508,7 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	if token.GID != 100 {
+	if token.GID != userGID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -520,7 +529,7 @@ func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
 	token, _ := TokenDecrypt(TokenFromHeader(r), rRouter.secretKey)
 
-	if token.GID != 100 {
+	if token.GID != userGID {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}

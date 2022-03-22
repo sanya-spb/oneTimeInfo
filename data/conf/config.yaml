@@ -1,14 +1,14 @@
 # Output of detailed debugging information (default: false)
-# debug: false
+# debug: true
 
-# secret key
-secret_key: "eqr3Fr6gBEotc7GIwvRUSaNyjBOQtRs5IRD/oMJkHhA="
+# secret key (required, for example: dd if=/dev/urandom count=32 bs=1 | base64)
+secret_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
-# listen addr:port (default: ":80")
-listen: ":8181"
+# listen addr:port (default: ":8080")
+# listen: ":80"
 
-# Log file for (default: ./data/logs/access.log)
-log_access: "./data/logs/access.log"
+# Log file for (default: "", mean out to stdout)
+# log_access: "./data/logs/access.log"
 
-# Log file for errors (default: ./data/errors.log)
-log_errors: "./data/logs/errors.log"
+# Log file for errors (default: "", mean out to stderr)
+# log_errors: "./data/logs/errors.log"
