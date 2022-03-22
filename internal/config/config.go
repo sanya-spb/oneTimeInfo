@@ -1,6 +1,9 @@
 package config
 
 import (
+	"context"
+	"encoding/base64"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -8,17 +11,19 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
 // configuration struct
 type Config struct {
-	ConfigFile string
-	Debug      bool   `yaml:"debug"`
-	Listen     string `yaml:"listen"`
-	SecretKey  string `yaml:"secret_key"`
-	LogAccess  string `yaml:"log_access"`
-	LogErrors  string `yaml:"log_errors"`
+	ConfigFile      string
+	Debug           bool   `yaml:"debug"`
+	Listen          string `yaml:"listen"`
+	SecretKeyBase64 string `yaml:"secret_key"`
+	SecretKey       [32]byte
+	LogAccess       string `yaml:"log_access"`
+	LogErrors       string `yaml:"log_errors"`
 }
 
 // loading configuration parameters from a file
@@ -45,14 +50,14 @@ func (c *Config) loadConfFile(path string) error {
 }
 
 // Init config
-func NewConfig() *Config {
+func NewConfig(ctx context.Context, log *logrus.Logger) *Config {
 	var result *Config = new(Config)
 	flag.StringVar(&result.ConfigFile, "config", GetEnv("CONFIG", ""), "Configuration settings file")
-	flag.StringVar(&result.SecretKey, "secret", GetEnv("SECRET", ""), "Secret key")
+	flag.StringVar(&result.SecretKeyBase64, "secret", GetEnv("SECRET", ""), "Secret key")
 	flag.BoolVar(&result.Debug, "debug", GetEnvBool("DEBUG", false), "Output of detailed debugging information")
 	flag.StringVar(&result.Listen, "listen", GetEnv("LISTEN", ":80"), "listen addr:port")
-	flag.StringVar(&result.LogAccess, "log-access", GetEnv("LOG_ACCESS", "./data/logs/access.log"), "Log file")
-	flag.StringVar(&result.LogErrors, "log-errors", GetEnv("LOG_ERRORS", "./data/logs/errors.log"), "Log file for errors")
+	flag.StringVar(&result.LogAccess, "log-access", GetEnv("LOG_ACCESS", ""), "Log file")
+	flag.StringVar(&result.LogErrors, "log-errors", GetEnv("LOG_ERRORS", ""), "Log file for errors")
 	// flag.Uint64Var(&result.FilterTimeout, "filter-timeout", GetEnvUInt("FILTER_TIMEOUT", 1000), "Timeout to filtering data, ms")
 	flag.Parse()
 
@@ -61,6 +66,16 @@ func NewConfig() *Config {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
+	}
+
+	secretKeyBytes, err := base64.StdEncoding.DecodeString(result.SecretKeyBase64)
+	if err != nil {
+		log.Fatalf("secretKey format error: %s", err.Error())
+	}
+	copy(result.SecretKey[:], secretKeyBytes)
+
+	if len(result.SecretKey) != 32 {
+		log.Fatal(errors.New("secretKey length error"))
 	}
 
 	return result

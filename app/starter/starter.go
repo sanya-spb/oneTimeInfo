@@ -2,12 +2,16 @@ package starter
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/sanya-spb/oneTimeInfo/app/repos/info"
 	"github.com/sanya-spb/oneTimeInfo/internal/config"
 	"github.com/sanya-spb/oneTimeInfo/pkg/version"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/writer"
 )
 
 // application struct
@@ -15,14 +19,74 @@ type App struct {
 	Info    *info.Info
 	Version version.AppVersion
 	Config  config.Config
+	logger  *logrus.Logger
 }
 
 // init for App
-func NewApp(store info.InfoStore) (*App, error) {
+func NewApp(ctx context.Context, logger *logrus.Logger, store info.InfoStore) (*App, error) {
+	logger.SetLevel(logrus.InfoLevel)
+	logger.SetOutput(ioutil.Discard)
+	logger.AddHook(&writer.Hook{ // Send logs with level higher than warning to stderr
+		Writer: os.Stderr,
+		LogLevels: []logrus.Level{
+			logrus.PanicLevel,
+			logrus.FatalLevel,
+			logrus.ErrorLevel,
+			logrus.WarnLevel,
+		},
+	})
+	logger.AddHook(&writer.Hook{ // Send info and debug logs to stdout
+		Writer: os.Stdout,
+		LogLevels: []logrus.Level{
+			logrus.InfoLevel,
+			logrus.DebugLevel,
+		},
+	})
+
 	app := &App{
 		Version: *version.Version,
-		Config:  *config.NewConfig(),
+		Config:  *config.NewConfig(ctx, logger),
+		logger:  logger,
 	}
+
+	if app.Config.Debug {
+		app.logger.SetLevel(logrus.DebugLevel)
+	}
+
+	if len(app.Config.LogAccess) > 0 {
+		fLog, err := os.OpenFile(app.Config.LogAccess, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, fmt.Errorf("Can't open logfile %s", err.Error())
+		} else {
+			// defer fLog.Close()
+			app.logger.AddHook(&writer.Hook{ // Send info and debug logs to stdout
+				Writer: fLog,
+				LogLevels: []logrus.Level{
+					logrus.InfoLevel,
+					logrus.DebugLevel,
+				},
+			})
+		}
+	}
+
+	if len(app.Config.LogErrors) > 0 {
+		fLog, err := os.OpenFile(app.Config.LogErrors, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, fmt.Errorf("Can't open logfile %s", err.Error())
+		} else {
+			// defer fLog.Close()
+			app.logger.AddHook(&writer.Hook{ // Send logs with level higher than warning to stderr
+				Writer: fLog,
+				LogLevels: []logrus.Level{
+					logrus.PanicLevel,
+					logrus.FatalLevel,
+					logrus.ErrorLevel,
+					logrus.WarnLevel,
+				},
+			})
+		}
+	}
+
 	return app, nil
 }
 
@@ -41,6 +105,7 @@ func (app *App) Serve(ctx context.Context, wg *sync.WaitGroup, hs HTTPServer) {
 
 // print welcome message
 func (app *App) Welcome() {
-	log.Printf("Starting otin-backend!\n\nVersion: %s [%s@%s]\nCopyright: %s\n\n", app.Version.Version, app.Version.Commit, app.Version.BuildTime, app.Version.Copyright)
-	// log.Printf("Config dump: %+v\n", app.Config)
+	app.logger.Info("Starting otin-backend!")
+	app.logger.Debugf("Version dump: %#v", app.Version)
+	// app.logger.Debugf("Config dump: %#v", app.Config)
 }
