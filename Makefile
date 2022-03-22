@@ -1,8 +1,8 @@
 PROJECT?=github.com/sanya-spb/oneTimeInfo
 PROJECTNAME=$(shell basename "$(PROJECT)")
 
-GOOS?=linux
-GOARCH?=amd64
+TARGETOS?=linux
+TARGETARCH?=amd64
 
 CGO_ENABLED=1
 
@@ -13,13 +13,23 @@ COPYRIGHT := "sanya-spb"
 
 ## build: Build otin-backend
 build:
-	GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=$(CGO_ENABLED) go build \
+	GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=${CGO_ENABLED} go build \
 		-ldflags "-s -w \
 		-X ${PROJECT}/pkg/version.version=${RELEASE} \
 		-X ${PROJECT}/pkg/version.commit=${COMMIT} \
 		-X ${PROJECT}/pkg/version.buildTime=${BUILD_TIME} \
 		-X ${PROJECT}/pkg/version.copyright=${COPYRIGHT}" \
 		-o ./cmd/otin-backend/otin-backend ./cmd/otin-backend/
+
+## build: Build otin-backend docker image
+build-image:
+	docker build -t otin-backend \
+	--build-arg RELEASE=${RELEASE} \
+	--build-arg COMMIT=${COMMIT} \
+	--build-arg BUILD_TIME=${BUILD_TIME} \
+	.
+	@echo "\n\nTo start container:"
+	@echo 'docker run --rm -it -p 80:8080 -v /var/lib/data:/app/data otin-backend:latest'
 
 ## check: Run linters
 check:
