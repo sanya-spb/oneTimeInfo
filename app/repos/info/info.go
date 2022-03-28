@@ -79,7 +79,12 @@ func (info *Info) CreateInfo(ctx context.Context, data TInfo) (uint, error) {
 
 	data.FileID, err = info.GetNextFileID()
 	if err != nil {
-		return 0, fmt.Errorf("create data error: %w", err)
+		return 0, fmt.Errorf("id generator error: %w", err)
+	}
+
+	data.Data, err = info.EncryptStr(data.Data)
+	if err != nil {
+		return 0, fmt.Errorf("encrypt data error: %w", err)
 	}
 
 	_, err = info.store.CreateInfo(ctx, data)
@@ -99,6 +104,11 @@ func (info *Info) ReadInfo(ctx context.Context, fileID uint, serviceID int) (*TI
 	data, err := info.store.ReadInfo(ctx, fileID, serviceID)
 	if err != nil {
 		return nil, fmt.Errorf("read data error: %w", err)
+	}
+
+	data.Data, err = info.DecryptStr(data.Data)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt data error: %w", err)
 	}
 
 	err = info.store.DeleteInfo(ctx, fileID, serviceID)
