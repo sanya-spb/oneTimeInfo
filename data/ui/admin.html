@@ -29,6 +29,9 @@
                 <input type="password" name="pass" id="pass">
                 <span>enter password</span>
             </li>
+            <li class="hidden" id="login-status">
+                status: 
+            </li>
             <li>
                 <input type="submit" id="stat-submit" value="login" >
             </li>
@@ -231,7 +234,12 @@
                 xhr.setRequestHeader('Authorization', 'Bearer '+ token )
             },
             success: function(data, status, xhr) {
-                $('#new-form-result').modal()
+                $("#new-message-form-data").val("")
+                $("#new-message-form-descr").val("")
+                $("#new-message-form-created_at").val("")
+                $("#new-message-form-delete_at").val("")
+
+                $("#new-form-result").modal()
                 $("#new-form-result-link").val(urlView+"?token="+encodeURIComponent(data.token))
                 $("#new-form-result-valid_from").val(data.TokenData.valid_from)
                 $("#new-form-result-valid_to").val(data.TokenData.valid_to)
@@ -263,11 +271,11 @@
                     "as_file": true,
                     "data": btoa(reader.result),
                 };
-                if ($("input[id='new-message-form-created_at']").val()!="") {
-                    j[created_at]=$("input[id='new-message-form-created_at']").val()
+                if ($("input[id='new-file-form-created_at']").val()!="") {
+                    j[created_at]=$("input[id='new-file-form-created_at']").val()
                 }
-                if ($("input[id='new-message-form-delete_at']").val()!="") {
-                    j[delete_at]=$("input[id='new-message-form-delete_at']").val()
+                if ($("input[id='new-file-form-delete_at']").val()!="") {
+                    j[delete_at]=$("input[id='new-file-form-delete_at']").val()
                 }
         
                 $.ajax({
@@ -280,6 +288,11 @@
                         xhr.setRequestHeader('Authorization', 'Bearer '+ token )
                     },
                     success: function(data, status, xhr) {
+                        $("#new-file-form-name").val("")
+                        $("#new-file-form-descr").val("")
+                        $("#new-file-form-created_at").val("")
+                        $("#new-file-form-delete_at").val("")
+        
                         $('#new-form-result').modal()
                         $("#new-form-result-link").val(urlView+"?token="+encodeURIComponent(data.token))
                         $("#new-form-result-valid_from").val(data.TokenData.valid_from)
@@ -366,6 +379,7 @@
 
         $('#login-form').submit(function(event) {
             event.preventDefault();
+            $("#login-status").hide()
             var user = $("input[name='user']").val();
             var pass = $("input[name='pass']").val();
 
@@ -377,6 +391,7 @@
                     xhr.setRequestHeader('Authorization', basicAuth(user, pass))
                 },
                 success: function(data, status, xhr) {
+                    $("#login-status").hide()
                     token = data.token
                     if (!datatableInited) {
                         datatableInit()
@@ -387,9 +402,8 @@
                 },
                 
                 error: function(xhr, status, error) {
-                    // $("#token-status").text("status: not authorized")
-                    // $('#tab-upload').addClass('disabled');
-                    // $('#tab-list').addClass('disabled');
+                    $("#login-status").text("status: " + error)
+                    $("#login-status").show("slow")
                 }
             });
         });

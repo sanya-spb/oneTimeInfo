@@ -170,6 +170,16 @@ li.active a {
 	margin-bottom: 25px;
 	border-radius: 3px;
 }
+.form-style-7 li.hidden{
+	display: none;
+}
+.form-style-7 li#login-status {
+    padding: 0px 5px 0px 5px;
+	border:1px solid red;
+	margin-top: -15px;
+	margin-bottom: 15px;
+	border-radius: 3px;
+}
 
 #secret-form textarea {
     height: 7em;
