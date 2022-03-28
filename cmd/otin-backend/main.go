@@ -26,9 +26,9 @@ func main() {
 
 	app.Welcome()
 
-	vInfo := info.NewInfo(store)
+	vInfo := info.NewInfo(app.Config.SecretKey, store)
 	appHandler := handler.NewHandler(vInfo)
-	appRouter := router.NewRouter(app.Config.SecretKey, appHandler)
+	appRouter := router.NewRouter(appHandler)
 	appServer := server.NewServer(app.Config.Listen, appRouter)
 
 	wg := &sync.WaitGroup{}

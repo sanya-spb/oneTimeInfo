@@ -24,7 +24,7 @@ func initUsers() map[string]info.TUser {
 	return map[string]info.TUser{
 		"admin": {
 			Login:    "admin",
-			Password: "admin",
+			Password: "pa$$w0rd",
 			UID:      1000,
 			GID:      1,
 		},

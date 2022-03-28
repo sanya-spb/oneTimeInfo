@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -22,6 +24,7 @@ func NewHandler(info *info.Info) *Handler {
 
 // TODO: пока берем из пакета info, потом решим что тут лишнее
 type TInfo info.TInfo
+type Token info.Token
 
 func (hHandler *Handler) CheckCredentials(login, password string) bool {
 	ok, err := hHandler.info.CheckCredentials(login, password)
@@ -32,6 +35,40 @@ func (hHandler *Handler) CheckCredentials(login, password string) bool {
 		return true
 	}
 	return false
+}
+
+func (hHandler *Handler) EncryptToken(token Token) (string, error) {
+	tokenJSON, err := json.Marshal(token)
+	if err != nil {
+		return "", fmt.Errorf("token serialization error: %s", err.Error())
+	}
+
+	encryptedToken, err := hHandler.info.EncryptStr([]byte(tokenJSON))
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(encryptedToken)), nil
+}
+
+func (hHandler *Handler) DecryptToken(cryptedTokenBase64 string) (*Token, error) {
+	cryptedToken, err := base64.StdEncoding.DecodeString(cryptedTokenBase64)
+	if err != nil {
+		return nil, fmt.Errorf("token format error: %s", err.Error())
+	}
+
+	decryptedToken, err := hHandler.info.DecryptStr(cryptedToken)
+	if err != nil {
+		return nil, err
+	}
+
+	var token Token
+	err = json.Unmarshal(decryptedToken, &token)
+	if err != nil {
+		return nil, fmt.Errorf("token deserialization error: %s", err.Error())
+	}
+
+	return &token, nil
 }
 
 func (hHandler *Handler) GetUser(user string) (info.TUser, error) {

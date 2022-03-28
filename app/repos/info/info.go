@@ -2,9 +2,13 @@ package info
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	"time"
+
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 type TInfo struct {
@@ -25,6 +29,16 @@ type TUser struct {
 	GID      uint
 }
 
+type Token struct {
+	Status    string    `json:"status"`
+	UID       uint      `json:"uid"`
+	GID       uint      `json:"gid"`
+	FileID    uint      `json:"file"`
+	ServiceID int       `json:"service"`
+	ValidFrom time.Time `json:"valid_from"`
+	ValidTo   time.Time `json:"valid_to"`
+}
+
 type InfoStore interface {
 	CreateInfo(ctx context.Context, data TInfo) (uint, error)
 	ReadInfo(ctx context.Context, fileID uint, serviceID int) (*TInfo, error)
@@ -36,21 +50,23 @@ type InfoStore interface {
 }
 
 type Info struct {
-	store InfoStore
+	store     InfoStore
+	secretKey [32]byte
 }
 
-func NewInfo(iStore InfoStore) *Info {
+func NewInfo(secretKey [32]byte, iStore InfoStore) *Info {
 	return &Info{
-		store: iStore,
+		store:     iStore,
+		secretKey: secretKey,
 	}
 }
 
-func (u *Info) CheckCredentials(login string, password string) (bool, error) {
-	return u.store.CheckCredentials(login, password)
+func (info *Info) CheckCredentials(login string, password string) (bool, error) {
+	return info.store.CheckCredentials(login, password)
 }
 
-func (u *Info) GetUser(login string) (*TUser, error) {
-	return u.store.GetUser(login)
+func (info *Info) GetUser(login string) (*TUser, error) {
+	return info.store.GetUser(login)
 }
 
 func (info *Info) GetNextFileID() (uint, error) {
@@ -132,4 +148,28 @@ func (info *Info) ListInfo(ctx context.Context) (chan TInfo, error) {
 	}()
 
 	return chout, nil
+}
+
+func (info *Info) EncryptStr(uncryptedStr []byte) ([]byte, error) {
+	var nonce [24]byte
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+		return nil, fmt.Errorf("rand generator error: %s", err.Error())
+	}
+
+	return secretbox.Seal(nonce[:], uncryptedStr, &nonce, &info.secretKey), nil
+}
+
+func (info *Info) DecryptStr(cryptedStr []byte) ([]byte, error) {
+	if !(len(cryptedStr) > 24) {
+		return nil, errors.New("data format error")
+	}
+
+	var nonce [24]byte
+	copy(nonce[:], cryptedStr[:24])
+	decrypted, ok := secretbox.Open(nil, cryptedStr[24:], &nonce, &info.secretKey)
+	if !ok {
+		return nil, errors.New("data decryption error")
+	}
+
+	return decrypted, nil
 }
