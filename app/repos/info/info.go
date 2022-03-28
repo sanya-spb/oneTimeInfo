@@ -12,14 +12,14 @@ import (
 )
 
 type TInfo struct {
-	FileID     uint      `json:"id"`
-	Name       string    `json:"name"`
-	Descr      string    `json:"descr"`
-	Size       int       `json:"size"`
-	IsFile     bool      `json:"as_file"`
-	CreatedAt  time.Time `json:"created_at"`
-	DeleteAt   time.Time `json:"delete_at"`
-	DataBase64 string    `json:"data"`
+	FileID    uint      `json:"id"`
+	Name      string    `json:"name"`
+	Descr     string    `json:"descr"`
+	Size      int       `json:"size"`
+	IsFile    bool      `json:"as_file"`
+	CreatedAt time.Time `json:"created_at"`
+	DeleteAt  time.Time `json:"delete_at"`
+	Data      []byte    `json:"data"`
 }
 
 type TUser struct {
@@ -119,7 +119,7 @@ func (info *Info) StatInfo(ctx context.Context, fileID uint, serviceID int) (*TI
 	if err != nil {
 		return nil, fmt.Errorf("read data error: %w", err)
 	}
-	data.DataBase64 = ""
+	data.Data = nil
 
 	return data, nil
 }
@@ -141,7 +141,7 @@ func (info *Info) ListInfo(ctx context.Context) (chan TInfo, error) {
 				if !ok {
 					return
 				}
-				data.DataBase64 = ""
+				data.Data = nil
 				chout <- data
 			}
 		}

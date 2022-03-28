@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/sanya-spb/oneTimeInfo/app/repos/info"
 )
@@ -22,9 +23,18 @@ func NewHandler(info *info.Info) *Handler {
 	return r
 }
 
-// TODO: пока берем из пакета info, потом решим что тут лишнее
-type TInfo info.TInfo
 type Token info.Token
+
+type TInfo struct {
+	FileID     uint      `json:"id"`
+	Name       string    `json:"name"`
+	Descr      string    `json:"descr"`
+	Size       int       `json:"size"`
+	IsFile     bool      `json:"as_file"`
+	CreatedAt  time.Time `json:"created_at"`
+	DeleteAt   time.Time `json:"delete_at"`
+	DataBase64 string    `json:"data"`
+}
 
 func (hHandler *Handler) CheckCredentials(login, password string) bool {
 	ok, err := hHandler.info.CheckCredentials(login, password)
@@ -48,7 +58,7 @@ func (hHandler *Handler) EncryptToken(token Token) (string, error) {
 		return "", err
 	}
 
-	return base64.StdEncoding.EncodeToString([]byte(encryptedToken)), nil
+	return base64.StdEncoding.EncodeToString(encryptedToken), nil
 }
 
 func (hHandler *Handler) DecryptToken(cryptedTokenBase64 string) (*Token, error) {
@@ -76,17 +86,33 @@ func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
 	return *vUser, err
 }
 
-func (hHandler *Handler) Create(ctx context.Context, vInfo TInfo) (uint, error) {
+func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uint, error) {
+	data, err := base64.StdEncoding.DecodeString(hInfo.DataBase64)
+	if err != nil {
+		return 0, fmt.Errorf("data format error: %s", err.Error())
+	}
+
+	vInfo := info.TInfo{
+		FileID:    hInfo.FileID,
+		Name:      hInfo.Name,
+		Descr:     hInfo.Descr,
+		Size:      hInfo.Size,
+		IsFile:    hInfo.IsFile,
+		CreatedAt: hInfo.CreatedAt,
+		DeleteAt:  hInfo.DeleteAt,
+		Data:      data,
+	}
+
 	id, err := hHandler.info.CreateInfo(ctx, info.TInfo(vInfo))
 	if err != nil {
-		return id, fmt.Errorf("error when creating: %w", err)
+		return 0, fmt.Errorf("error when creating: %w", err)
 	}
 
 	return id, nil
 }
 
 func (hHandler *Handler) StatInfo(ctx context.Context, fileID uint, serviceID int) (TInfo, error) {
-	data, err := hHandler.info.StatInfo(ctx, fileID, serviceID)
+	vInfo, err := hHandler.info.StatInfo(ctx, fileID, serviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
@@ -94,11 +120,22 @@ func (hHandler *Handler) StatInfo(ctx context.Context, fileID uint, serviceID in
 		return TInfo{}, fmt.Errorf("error when reading: %w", err)
 	}
 
-	return TInfo(*data), nil
+	hInfo := TInfo{
+		FileID:     vInfo.FileID,
+		Name:       vInfo.Name,
+		Descr:      vInfo.Descr,
+		Size:       vInfo.Size,
+		IsFile:     vInfo.IsFile,
+		CreatedAt:  vInfo.CreatedAt,
+		DeleteAt:   vInfo.DeleteAt,
+		DataBase64: base64.StdEncoding.EncodeToString(vInfo.Data),
+	}
+
+	return hInfo, nil
 }
 
 func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uint, serviceID int) (TInfo, error) {
-	delData, err := hHandler.info.ReadInfo(ctx, fileID, serviceID)
+	vInfo, err := hHandler.info.ReadInfo(ctx, fileID, serviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
@@ -106,7 +143,16 @@ func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uint, serviceID in
 		return TInfo{}, fmt.Errorf("error when deleting: %w", err)
 	}
 
-	return TInfo(*delData), nil
+	return TInfo{
+		FileID:     vInfo.FileID,
+		Name:       vInfo.Name,
+		Descr:      vInfo.Descr,
+		Size:       vInfo.Size,
+		IsFile:     vInfo.IsFile,
+		CreatedAt:  vInfo.CreatedAt,
+		DeleteAt:   vInfo.DeleteAt,
+		DataBase64: base64.StdEncoding.EncodeToString(vInfo.Data),
+	}, nil
 }
 
 func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
@@ -122,11 +168,20 @@ func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
 			select {
 			case <-ctx.Done():
 				return
-			case data, ok := <-chin:
+			case vInfo, ok := <-chin:
 				if !ok {
 					return
 				}
-				chout <- TInfo(data)
+				chout <- TInfo{
+					FileID:     vInfo.FileID,
+					Name:       vInfo.Name,
+					Descr:      vInfo.Descr,
+					Size:       vInfo.Size,
+					IsFile:     vInfo.IsFile,
+					CreatedAt:  vInfo.CreatedAt,
+					DeleteAt:   vInfo.DeleteAt,
+					DataBase64: base64.StdEncoding.EncodeToString(vInfo.Data),
+				}
 			}
 		}
 	}()

@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"sync"
 	"time"
@@ -50,24 +49,24 @@ func initInfo() map[uint]info.TInfo {
 	}
 	return map[uint]info.TInfo{
 		1: {
-			FileID:     1,
-			Name:       "testFile1.txt",
-			Descr:      "file for testing",
-			Size:       len(data[1]),
-			IsFile:     true,
-			CreatedAt:  time.Now().Add(-time.Hour * 24).Round(time.Second),
-			DeleteAt:   time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
-			DataBase64: base64.StdEncoding.EncodeToString(data[1]),
+			FileID:    1,
+			Name:      "testFile1.txt",
+			Descr:     "file for testing",
+			Size:      len(data[1]),
+			IsFile:    true,
+			CreatedAt: time.Now().Add(-time.Hour * 24).Round(time.Second),
+			DeleteAt:  time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
+			Data:      data[1],
 		},
 		2: {
-			FileID:     2,
-			Name:       "message",
-			Descr:      "message for testing",
-			Size:       len(data[2]),
-			IsFile:     false,
-			CreatedAt:  time.Now().Add(-time.Hour * 24).Round(time.Second),
-			DeleteAt:   time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
-			DataBase64: base64.StdEncoding.EncodeToString(data[2]),
+			FileID:    2,
+			Name:      "message",
+			Descr:     "message for testing",
+			Size:      len(data[2]),
+			IsFile:    false,
+			CreatedAt: time.Now().Add(-time.Hour * 24).Round(time.Second),
+			DeleteAt:  time.Now().Add(time.Hour * 24 * 14).Round(time.Second),
+			Data:      data[2],
 		},
 	}
 }
