@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"encoding/base64"
 
@@ -49,7 +51,11 @@ func (info *TInfo) Bind(r *http.Request) error {
 	if data, err := base64.StdEncoding.DecodeString(info.DataBase64); err != nil {
 		return fmt.Errorf("data format error: %s", err)
 	} else {
-		info.Size = len(data)
+		if decodedData, err := url.QueryUnescape(string(data)); err == nil {
+			info.Size = utf8.RuneCountInString(decodedData)
+		} else {
+			info.Size = len(data)
+		}
 	}
 
 	if info.CreatedAt.IsZero() {

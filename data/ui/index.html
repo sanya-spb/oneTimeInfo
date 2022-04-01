@@ -195,7 +195,7 @@
                         clickClose: false,
                         // showClose: false
                     })
-                    $('#secret').val(fromBinary(atob(data.data)))
+                    $('#secret').val(decodeURIComponent(atob(data.data)))
                 }
             },
             error: function(xhr, status, error) {
@@ -221,19 +221,6 @@
             bytes[i] = binary_string.charCodeAt(i);
         }
         return bytes.buffer;
-    }
-
-    function fromBinary(binary) {
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < bytes.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        const charCodes = new Uint16Array(bytes.buffer);
-        let result = '';
-        for (let i = 0; i < charCodes.length; i++) {
-          result += String.fromCharCode(charCodes[i]);
-        }
-        return result;
     }
 
     //auto expand textarea
