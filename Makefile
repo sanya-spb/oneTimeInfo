@@ -22,14 +22,14 @@ build:
 		-o ./cmd/otin-backend/otin-backend ./cmd/otin-backend/
 
 ## build: Build otin-backend docker image
-build-image:
+image:
 	docker build -t otin-backend \
 	--build-arg RELEASE=${RELEASE} \
 	--build-arg COMMIT=${COMMIT} \
 	--build-arg BUILD_TIME=${BUILD_TIME} \
 	.
 	@echo "\n\nTo start container:"
-	@echo 'docker run --rm -it -p 80:8080 -v /var/lib/data:/app/data otin-backend:latest'
+	@echo 'docker run -dit --restart unless-stopped -p 8080:8080 -v $(pwd)/conf:/app/data/conf --name otin-backend otin-backend:latest'
 
 ## check: Run linters
 check:
