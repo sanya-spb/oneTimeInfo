@@ -30,5 +30,5 @@ USER goapp
 WORKDIR /app
 ENTRYPOINT /app/otin-backend -config /app/data/conf/config.yaml -debug
 LABEL Name=otin-backend
-VOLUME ["/app/data"]
+VOLUME ["/app/data/conf", "/app/data/logs", "/app/data/ui"]
 EXPOSE 8080/tcp
