@@ -112,8 +112,8 @@ func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, er
 	return id, nil
 }
 
-func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (TInfo, error) {
-	vInfo, err := hHandler.info.StatInfo(ctx, fileID, serviceID)
+func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID) (TInfo, error) {
+	vInfo, err := hHandler.info.StatInfo(ctx, fileID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
@@ -135,8 +135,8 @@ func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID, service
 	return hInfo, nil
 }
 
-func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (TInfo, error) {
-	vInfo, err := hHandler.info.ReadInfo(ctx, fileID, serviceID)
+func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID) (TInfo, error) {
+	vInfo, err := hHandler.info.ReadInfo(ctx, fileID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound

@@ -35,15 +35,14 @@ type Token struct {
 	UID       uint      `json:"uid"`
 	GID       uint      `json:"gid"`
 	FileID    uuid.UUID `json:"file"`
-	ServiceID int       `json:"service"`
 	ValidFrom time.Time `json:"valid_from"`
 	ValidTo   time.Time `json:"valid_to"`
 }
 
 type InfoStore interface {
 	CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error)
-	ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*TInfo, error)
-	DeleteInfo(ctx context.Context, fileID uuid.UUID, serviceID int) error
+	ReadInfo(ctx context.Context, fileID uuid.UUID) (*TInfo, error)
+	DeleteInfo(ctx context.Context, fileID uuid.UUID) error
 	CheckCredentials(login string, password string) (bool, error)
 	GetUser(login string) (*TUser, error)
 	ListInfo(ctx context.Context) (chan TInfo, error)
@@ -89,12 +88,8 @@ func (info *Info) CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error)
 }
 
 // Get Info by UUID
-func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*TInfo, error) {
-	if serviceID != 1 {
-		return nil, errors.New("unknown service")
-	}
-
-	data, err := info.store.ReadInfo(ctx, fileID, serviceID)
+func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID) (*TInfo, error) {
+	data, err := info.store.ReadInfo(ctx, fileID)
 	if err != nil {
 		return nil, fmt.Errorf("read data error: %w", err)
 	}
@@ -104,7 +99,7 @@ func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int)
 		return nil, fmt.Errorf("decrypt data error: %w", err)
 	}
 
-	err = info.store.DeleteInfo(ctx, fileID, serviceID)
+	err = info.store.DeleteInfo(ctx, fileID)
 	if err != nil {
 		return nil, fmt.Errorf("delete data error: %w", err)
 	}
@@ -113,12 +108,8 @@ func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int)
 }
 
 // Get Stat by UUID
-func (info *Info) StatInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*TInfo, error) {
-	if serviceID != 1 {
-		return nil, errors.New("unknown service")
-	}
-
-	data, err := info.store.ReadInfo(ctx, fileID, serviceID)
+func (info *Info) StatInfo(ctx context.Context, fileID uuid.UUID) (*TInfo, error) {
+	data, err := info.store.ReadInfo(ctx, fileID)
 	if err != nil {
 		return nil, fmt.Errorf("read data error: %w", err)
 	}

@@ -86,7 +86,7 @@ func (info *Info) CreateInfo(ctx context.Context, data info.TInfo) (uuid.UUID, e
 	return data.FileID, nil
 }
 
-func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*info.TInfo, error) {
+func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID) (*info.TInfo, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -104,7 +104,7 @@ func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int)
 	return nil, sql.ErrNoRows
 }
 
-func (info *Info) DeleteInfo(ctx context.Context, fileID uuid.UUID, serviceID int) error {
+func (info *Info) DeleteInfo(ctx context.Context, fileID uuid.UUID) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -119,7 +119,7 @@ func (info *Info) DeleteInfo(ctx context.Context, fileID uuid.UUID, serviceID in
 	return sql.ErrNoRows
 }
 
-func (info *Info) IsExist(ctx context.Context, fileID uuid.UUID, serviceID int) (bool, error) {
+func (info *Info) IsExist(ctx context.Context, fileID uuid.UUID) (bool, error) {
 	select {
 	case <-ctx.Done():
 		return false, ctx.Err()

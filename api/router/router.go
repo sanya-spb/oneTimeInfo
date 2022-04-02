@@ -322,7 +322,7 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vInfo, err := rRouter.hHandler.StatInfo(r.Context(), id, 1)
+	vInfo, err := rRouter.hHandler.StatInfo(r.Context(), id)
 	if err != nil {
 		render.Render(w, r, Err500(err))
 		return
@@ -332,7 +332,6 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 		Status:    tokenStatusOk,
 		FileID:    id,
 		GID:       100,
-		ServiceID: 1,
 		ValidFrom: vInfo.CreatedAt,
 		ValidTo:   vInfo.DeleteAt,
 	}
@@ -399,7 +398,7 @@ func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := rRouter.hHandler.StatInfo(r.Context(), token.FileID, token.ServiceID)
+	data, err := rRouter.hHandler.StatInfo(r.Context(), token.FileID)
 	if err != nil {
 		if errors.As(err, &handler.ErrInfoNotFound) {
 			render.Render(w, r, Err404(err))
@@ -420,7 +419,7 @@ func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := rRouter.hHandler.ReadInfo(r.Context(), token.FileID, token.ServiceID)
+	data, err := rRouter.hHandler.ReadInfo(r.Context(), token.FileID)
 	if err != nil {
 		if errors.As(err, &handler.ErrInfoNotFound) {
 			render.Render(w, r, Err404(err))
