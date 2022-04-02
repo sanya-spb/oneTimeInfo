@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/ui/css/style.css" />
     <title>OTIN UI</title>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" src="./js/Base64_encoding_and_decoding.js"></script>
     <!-- <script src="./js/FileSaver.js"></script> -->
     <!-- jQuery Modal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
@@ -195,7 +196,7 @@
                         clickClose: false,
                         // showClose: false
                     })
-                    $('#secret').val(decodeURIComponent(atob(data.data)))
+                    $('#secret').val(UTF8ArrToStr(base64DecToArr(data.data)))
                 }
             },
             error: function(xhr, status, error) {
