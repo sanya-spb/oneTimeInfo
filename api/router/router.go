@@ -68,36 +68,6 @@ func (info *TInfo) Bind(r *http.Request) error {
 	return nil
 }
 
-func (token *Token) Bind(r *http.Request) error {
-	token.Status = tokenStatusOk
-
-	if !(token.GID >= 0) {
-		return errors.New("missing required field: gid")
-	}
-
-	if !(token.FileID >= 0) {
-		return errors.New("missing required field: file")
-	}
-
-	if !(token.ServiceID >= 0) {
-		return errors.New("missing required field: service")
-	}
-
-	if token.ValidFrom.IsZero() {
-		token.ValidFrom = time.Now().Round(time.Second)
-	}
-
-	if token.ValidTo.IsZero() {
-		if token.GID == adminGID {
-			token.ValidTo = time.Now().Add(time.Minute * 30).Round(time.Second)
-		} else {
-			token.ValidTo = time.Now().Add(time.Hour * 24 * 14).Round(time.Second)
-		}
-	}
-
-	return nil
-}
-
 func (info TInfo) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }

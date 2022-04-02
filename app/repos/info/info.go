@@ -8,11 +8,12 @@ import (
 	"io"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
 type TInfo struct {
-	FileID    uint      `json:"id"`
+	FileID    uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	Descr     string    `json:"descr"`
 	Size      int       `json:"size"`
@@ -33,19 +34,18 @@ type Token struct {
 	Status    string    `json:"status"`
 	UID       uint      `json:"uid"`
 	GID       uint      `json:"gid"`
-	FileID    uint      `json:"file"`
+	FileID    uuid.UUID `json:"file"`
 	ServiceID int       `json:"service"`
 	ValidFrom time.Time `json:"valid_from"`
 	ValidTo   time.Time `json:"valid_to"`
 }
 
 type InfoStore interface {
-	CreateInfo(ctx context.Context, data TInfo) (uint, error)
-	ReadInfo(ctx context.Context, fileID uint, serviceID int) (*TInfo, error)
-	DeleteInfo(ctx context.Context, fileID uint, serviceID int) error
+	CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error)
+	ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*TInfo, error)
+	DeleteInfo(ctx context.Context, fileID uuid.UUID, serviceID int) error
 	CheckCredentials(login string, password string) (bool, error)
 	GetUser(login string) (*TUser, error)
-	GetNextFileID() (uint, error)
 	ListInfo(ctx context.Context) (chan TInfo, error)
 }
 
@@ -69,34 +69,27 @@ func (info *Info) GetUser(login string) (*TUser, error) {
 	return info.store.GetUser(login)
 }
 
-func (info *Info) GetNextFileID() (uint, error) {
-	return info.store.GetNextFileID()
-}
-
 // Create new data with returning it UUID
-func (info *Info) CreateInfo(ctx context.Context, data TInfo) (uint, error) {
+func (info *Info) CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error) {
 	var err error
 
-	data.FileID, err = info.GetNextFileID()
-	if err != nil {
-		return 0, fmt.Errorf("id generator error: %w", err)
-	}
+	data.FileID = uuid.New()
 
 	data.Data, err = info.EncryptStr(data.Data)
 	if err != nil {
-		return 0, fmt.Errorf("encrypt data error: %w", err)
+		return uuid.UUID{}, fmt.Errorf("encrypt data error: %w", err)
 	}
 
 	_, err = info.store.CreateInfo(ctx, data)
 	if err != nil {
-		return 0, fmt.Errorf("create data error: %w", err)
+		return uuid.UUID{}, fmt.Errorf("create data error: %w", err)
 	}
 
 	return data.FileID, nil
 }
 
 // Get Info by UUID
-func (info *Info) ReadInfo(ctx context.Context, fileID uint, serviceID int) (*TInfo, error) {
+func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*TInfo, error) {
 	if serviceID != 1 {
 		return nil, errors.New("unknown service")
 	}
@@ -120,7 +113,7 @@ func (info *Info) ReadInfo(ctx context.Context, fileID uint, serviceID int) (*TI
 }
 
 // Get Stat by UUID
-func (info *Info) StatInfo(ctx context.Context, fileID uint, serviceID int) (*TInfo, error) {
+func (info *Info) StatInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (*TInfo, error) {
 	if serviceID != 1 {
 		return nil, errors.New("unknown service")
 	}

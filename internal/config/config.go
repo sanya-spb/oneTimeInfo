@@ -23,6 +23,22 @@ type Config struct {
 	SecretKey       [32]byte
 	LogAccess       string `yaml:"log_access"`
 	LogErrors       string `yaml:"log_errors"`
+	Admin           AdminConfig
+	Store           StoreConfig
+}
+
+type AdminConfig struct {
+	Login  string `yaml:"login"`
+	Passwd string `yaml:"passwd"`
+}
+
+type StoreConfig struct {
+	Type    string `yaml:"type"`
+	Address string `yaml:"address"`
+	Port    uint   `yaml:"port"`
+	User    string `yaml:"user"`
+	Passwd  string `yaml:"passwd"`
+	DBName  string `yaml:"db"`
 }
 
 // loading configuration parameters from a file
@@ -58,13 +74,26 @@ func NewConfig(ctx context.Context, log *logrus.Logger) *Config {
 	flag.StringVar(&result.Listen, "listen", GetEnv("LISTEN", ":8080"), "listen addr:port")
 	flag.StringVar(&result.LogAccess, "log-access", GetEnv("LOG_ACCESS", ""), "Log file")
 	flag.StringVar(&result.LogErrors, "log-errors", GetEnv("LOG_ERRORS", ""), "Log file for errors")
-	// flag.Uint64Var(&result.FilterTimeout, "filter-timeout", GetEnvUInt("FILTER_TIMEOUT", 1000), "Timeout to filtering data, ms")
+	flag.StringVar(&result.Store.Address, "store-address", GetEnv("STORE_ADDRESS", ""), "Store address")
+	var port64 uint64
+	flag.Uint64Var(&port64, "store-port", GetEnvUInt64("STORE_PORT", 1000), "Store port")
+	flag.StringVar(&result.Store.User, "store-user", GetEnv("STORE_USER", ""), "Store user")
+	flag.StringVar(&result.Store.Passwd, "store-passwd", GetEnv("STORE_PASSWD", ""), "Store password")
+	flag.StringVar(&result.Store.DBName, "store-db", GetEnv("STORE_DB", ""), "Store DB name")
+	flag.StringVar(&result.Admin.Login, "admin-login", GetEnv("ADMIN_LOGIN", ""), "Admin login")
+	flag.StringVar(&result.Admin.Passwd, "admin-passwd", GetEnv("ADMIN_PASSWD", ""), "Admin password")
 	flag.Parse()
 
 	if result.ConfigFile != "" {
 		if err := result.loadConfFile(result.ConfigFile); err != nil {
 			log.Fatalf("Config file reading error: %s", err.Error())
 		}
+	}
+
+	if port64 < 0 || port64 > 65535 {
+		log.Fatal("port error")
+	} else {
+		result.Store.Port = uint(port64)
 	}
 
 	if result.SecretKeyBase64 == "" {
@@ -85,7 +114,7 @@ func NewConfig(ctx context.Context, log *logrus.Logger) *Config {
 }
 
 // Get uint value from ENV
-func GetEnvUInt(key string, defaultVal uint64) uint64 {
+func GetEnvUInt64(key string, defaultVal uint64) uint64 {
 	if envVal, ok := os.LookupEnv(key); ok {
 		if envBool, err := strconv.ParseUint(envVal, 10, 64); err == nil {
 			return envBool

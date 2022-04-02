@@ -18,15 +18,15 @@ import (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	log := logrus.New()
-	store := store.NewInfo()
-	app, err := starter.NewApp(ctx, log, store)
+	app, err := starter.NewApp(ctx, log)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	app.Welcome()
 
-	vInfo := info.NewInfo(app.Config.SecretKey, store)
+	vStore := store.NewInfo(ctx, app.Config)
+	vInfo := info.NewInfo(app.Config.SecretKey, vStore)
 	appHandler := handler.NewHandler(vInfo)
 	appRouter := router.NewRouter(appHandler)
 	appServer := server.NewServer(app.Config.Listen, appRouter)

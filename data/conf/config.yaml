@@ -1,14 +1,26 @@
-# Output of detailed debugging information (default: false)
+## Output of detailed debugging information (default: false)
 # debug: true
 
-# secret key (required, for example: dd if=/dev/urandom count=32 bs=1 | base64)
+## secret key (required, for example: dd if=/dev/urandom count=32 bs=1 | base64)
 secret_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
-# listen addr:port (default: ":8080")
+## listen addr:port (default: ":8080")
 # listen: ":80"
 
-# Log file for (default: "", mean out to stdout)
+## Log file for (default: "", mean out to stdout)
 # log_access: "./data/logs/access.log"
 
-# Log file for errors (default: "", mean out to stderr)
+## Log file for errors (default: "", mean out to stderr)
 # log_errors: "./data/logs/errors.log"
+
+## administrative credentials
+admin:
+  login: admin
+  passwd: pa$$w0rd123
+
+## Store configuration
+store:
+  address: 127.0.0.1
+  port: 6379
+  password: ""
+  DB: 0

@@ -23,7 +23,7 @@ type App struct {
 }
 
 // init for App
-func NewApp(ctx context.Context, logger *logrus.Logger, store info.InfoStore) (*App, error) {
+func NewApp(ctx context.Context, logger *logrus.Logger) (*App, error) {
 	logger.SetLevel(logrus.InfoLevel)
 	logger.SetOutput(ioutil.Discard)
 	logger.AddHook(&writer.Hook{ // Send logs with level higher than warning to stderr

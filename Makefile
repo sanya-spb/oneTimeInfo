@@ -21,7 +21,7 @@ build:
 		-X ${PROJECT}/pkg/version.copyright=${COPYRIGHT}" \
 		-o ./cmd/otin-backend/otin-backend ./cmd/otin-backend/
 
-## build: Build otin-backend docker image
+## image: Build otin-backend docker image
 image:
 	docker build -t otin-backend \
 	--build-arg RELEASE=${RELEASE} \

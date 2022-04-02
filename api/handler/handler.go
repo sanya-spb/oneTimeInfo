@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sanya-spb/oneTimeInfo/app/repos/info"
 )
 
@@ -26,7 +27,7 @@ func NewHandler(info *info.Info) *Handler {
 type Token info.Token
 
 type TInfo struct {
-	FileID     uint      `json:"id"`
+	FileID     uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
 	Descr      string    `json:"descr"`
 	Size       int       `json:"size"`
@@ -86,10 +87,10 @@ func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
 	return *vUser, err
 }
 
-func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uint, error) {
+func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, error) {
 	data, err := base64.StdEncoding.DecodeString(hInfo.DataBase64)
 	if err != nil {
-		return 0, fmt.Errorf("data format error: %s", err.Error())
+		return uuid.UUID{}, fmt.Errorf("data format error: %s", err.Error())
 	}
 
 	vInfo := info.TInfo{
@@ -105,13 +106,13 @@ func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uint, error) 
 
 	id, err := hHandler.info.CreateInfo(ctx, info.TInfo(vInfo))
 	if err != nil {
-		return 0, fmt.Errorf("error when creating: %w", err)
+		return uuid.UUID{}, fmt.Errorf("error when creating: %w", err)
 	}
 
 	return id, nil
 }
 
-func (hHandler *Handler) StatInfo(ctx context.Context, fileID uint, serviceID int) (TInfo, error) {
+func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (TInfo, error) {
 	vInfo, err := hHandler.info.StatInfo(ctx, fileID, serviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -134,7 +135,7 @@ func (hHandler *Handler) StatInfo(ctx context.Context, fileID uint, serviceID in
 	return hInfo, nil
 }
 
-func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uint, serviceID int) (TInfo, error) {
+func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID, serviceID int) (TInfo, error) {
 	vInfo, err := hHandler.info.ReadInfo(ctx, fileID, serviceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
