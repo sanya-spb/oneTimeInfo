@@ -33,7 +33,6 @@ type AdminConfig struct {
 }
 
 type StoreConfig struct {
-	Type    string `yaml:"type"`
 	Address string `yaml:"address"`
 	Port    uint   `yaml:"port"`
 	User    string `yaml:"user"`
