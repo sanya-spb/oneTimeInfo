@@ -11,7 +11,7 @@ import (
 	"github.com/sanya-spb/oneTimeInfo/api/server"
 	"github.com/sanya-spb/oneTimeInfo/app/repos/info"
 	"github.com/sanya-spb/oneTimeInfo/app/starter"
-	"github.com/sanya-spb/oneTimeInfo/db/memory/info/store"
+	"github.com/sanya-spb/oneTimeInfo/db/redis/info/store"
 	"github.com/sirupsen/logrus"
 )
 

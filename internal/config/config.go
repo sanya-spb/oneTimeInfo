@@ -73,9 +73,9 @@ func NewConfig(ctx context.Context, log *logrus.Logger) *Config {
 	flag.StringVar(&result.Listen, "listen", GetEnv("LISTEN", ":8080"), "listen addr:port")
 	flag.StringVar(&result.LogAccess, "log-access", GetEnv("LOG_ACCESS", ""), "Log file")
 	flag.StringVar(&result.LogErrors, "log-errors", GetEnv("LOG_ERRORS", ""), "Log file for errors")
-	flag.StringVar(&result.Store.Address, "store-address", GetEnv("STORE_ADDRESS", ""), "Store address")
+	flag.StringVar(&result.Store.Address, "store-address", GetEnv("STORE_ADDRESS", "127.0.0.1"), "Store address")
 	var port64 uint64
-	flag.Uint64Var(&port64, "store-port", GetEnvUInt64("STORE_PORT", 1000), "Store port")
+	flag.Uint64Var(&port64, "store-port", GetEnvUInt64("STORE_PORT", 6379), "Store port")
 	flag.StringVar(&result.Store.User, "store-user", GetEnv("STORE_USER", ""), "Store user")
 	flag.StringVar(&result.Store.Passwd, "store-passwd", GetEnv("STORE_PASSWD", ""), "Store password")
 	flag.StringVar(&result.Store.DBName, "store-db", GetEnv("STORE_DB", ""), "Store DB name")
