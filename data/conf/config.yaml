@@ -16,7 +16,7 @@ secret_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 ## administrative credentials
 admin:
   login: admin
-  passwd: pa$$w0rd123
+  passwd: pa$$w0rd
 
 ## Store configuration
 store:

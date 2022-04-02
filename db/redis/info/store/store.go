@@ -51,6 +51,15 @@ func NewInfo(ctx context.Context, conf config.Config) *Info {
 	}
 }
 
+func (vInfo *Info) Ping(ctx context.Context) (bool, error) {
+	_, err := vInfo.rdb.Ping(ctx).Result()
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (vInfo *Info) CheckCredentials(login string, password string) (bool, error) {
 	vInfo.RLock()
 	defer vInfo.RUnlock()

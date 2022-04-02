@@ -26,6 +26,9 @@ func main() {
 	app.Welcome()
 
 	vStore := store.NewInfo(ctx, app.Config)
+	if ok, err := vStore.Ping(ctx); !ok {
+		log.Fatal(err.Error())
+	}
 	vInfo := info.NewInfo(app.Config.SecretKey, vStore)
 	appHandler := handler.NewHandler(vInfo)
 	appRouter := router.NewRouter(appHandler)
