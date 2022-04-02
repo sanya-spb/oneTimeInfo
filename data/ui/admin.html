@@ -219,10 +219,10 @@
             "data": base64EncArr(strToUTF8Arr($("#new-message-form-data").val())),
         };
         if ($("input[id='new-message-form-created_at']").val()!="") {
-            j[created_at]=$("input[id='new-message-form-created_at']").val()
+            j["created_at"]=$("input[id='new-message-form-created_at']").val()
         }
         if ($("input[id='new-message-form-delete_at']").val()!="") {
-            j[delete_at]=$("input[id='new-message-form-delete_at']").val()
+            j["delete_at"]=$("input[id='new-message-form-delete_at']").val()
         }
 
         $.ajax({
@@ -273,10 +273,10 @@
                     "data": btoa(reader.result),
                 };
                 if ($("input[id='new-file-form-created_at']").val()!="") {
-                    j[created_at]=$("input[id='new-file-form-created_at']").val()
+                    j["created_at"]=$("input[id='new-file-form-created_at']").val()
                 }
                 if ($("input[id='new-file-form-delete_at']").val()!="") {
-                    j[delete_at]=$("input[id='new-file-form-delete_at']").val()
+                    j["delete_at"]=$("input[id='new-file-form-delete_at']").val()
                 }
         
                 $.ajax({
