@@ -403,7 +403,7 @@
                 },
                 
                 error: function(xhr, status, error) {
-                    $("#login-status").text("status: " + error)
+                    $("#login-status").text("status: " + xhr.responseText)
                     $("#login-status").show("slow")
                 }
             });
