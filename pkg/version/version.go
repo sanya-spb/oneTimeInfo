@@ -8,7 +8,7 @@ type AppVersion struct {
 	Copyright string
 }
 
-// global variable for export to main
+// Version - global variable for export to main
 var Version = new(AppVersion)
 
 // set vars from Makefile via go build -ldflags "-s -w -X ..."
