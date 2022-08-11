@@ -20,27 +20,27 @@
             <form class="form-style-7" id="stat-secret-form">
                 <ul>
                 <li>
-                    <label for="name">File</label>
+                    <label for="stat-name">File</label>
                     <input type="text" name="name" id="stat-name" maxlength="128" readonly>
                     <span>Name of secret file</span>
                 </li>
                 <li>
-                    <label for="descr">Description</label>
+                    <label for="stat-descr">Description</label>
                     <textarea name="descr" id="stat-descr" onkeyup="adjust_textarea(this)" readonly></textarea>
                     <span>Description of secret file</span>
                 </li>
                 <li>
-                    <label for="size">Size</label>
+                    <label for="stat-size">Size</label>
                     <input type="number" name="size" id="stat-size" readonly>
                     <span>File size</span>
                 </li>
                 <li>
-                    <label for="created_at">Created at</label>
+                    <label for="stat-created_at">Created at</label>
                     <input type="datetime" name="created_at" id="stat-created_at" readonly>
                     <span>Date and time when secret was created</span>
                 </li>
                 <li>
-                    <label for="delete_at">Delete at</label>
+                    <label for="stat-delete_at">Delete at</label>
                     <input type="datetime" name="delete_at" id="stat-delete_at" readonly>
                     <span>Date and time when secret will be deleted</span>
                 </li>
@@ -178,7 +178,7 @@
                     var blob = new Blob([base64ToArrayBuffer(data.data)], { type: "application/octet-stream" });
  
                     //Check the Browser type and download the File.
-                    var isIE = false || !!document.documentMode;
+                    var isIE = !!document.documentMode;
                     if (isIE) {
                         window.navigator.msSaveBlob(blob, data.name);
                     } else {

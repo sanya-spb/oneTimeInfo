@@ -145,10 +145,10 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 	default:
 	}
 
-	chout := make(chan info.TInfo, 100)
+	chOut := make(chan info.TInfo, 100)
 
 	go func() {
-		defer close(chout)
+		defer close(chOut)
 
 		vInfo.RLock()
 		defer vInfo.RUnlock()
@@ -157,10 +157,10 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 			select {
 			case <-ctx.Done():
 				return
-			case chout <- data:
+			case chOut <- data:
 			}
 		}
 	}()
 
-	return chout, nil
+	return chOut, nil
 }

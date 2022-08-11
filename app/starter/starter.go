@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/writer"
 )
 
-// application struct
+// App application struct
 type App struct {
 	Info    *info.Info
 	Version version.AppVersion
@@ -22,7 +22,7 @@ type App struct {
 	logger  *logrus.Logger
 }
 
-// init for App
+// NewApp init for App
 func NewApp(logger *logrus.Logger) (*App, error) {
 	logger.SetLevel(logrus.InfoLevel)
 	logger.SetOutput(ioutil.Discard)
@@ -56,7 +56,7 @@ func NewApp(logger *logrus.Logger) (*App, error) {
 	if len(app.Config.LogAccess) > 0 {
 		fLog, err := os.OpenFile(app.Config.LogAccess, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, fmt.Errorf("Can't open logfile %s", err.Error())
+			return nil, fmt.Errorf("can't open logfile %s", err.Error())
 		}
 
 		app.logger.AddHook(&writer.Hook{ // Send info and debug logs to stdout
@@ -71,7 +71,7 @@ func NewApp(logger *logrus.Logger) (*App, error) {
 	if len(app.Config.LogErrors) > 0 {
 		fLog, err := os.OpenFile(app.Config.LogErrors, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			return nil, fmt.Errorf("Can't open logfile %s", err.Error())
+			return nil, fmt.Errorf("can't open logfile %s", err.Error())
 		}
 
 		app.logger.AddHook(&writer.Hook{ // Send logs with level higher than warning to stderr
@@ -93,7 +93,7 @@ type HTTPServer interface {
 	Stop()
 }
 
-// start service
+// Serve start service
 func (app *App) Serve(ctx context.Context, wg *sync.WaitGroup, hs HTTPServer) {
 	defer wg.Done()
 	hs.Start(app.Info)
@@ -101,8 +101,8 @@ func (app *App) Serve(ctx context.Context, wg *sync.WaitGroup, hs HTTPServer) {
 	hs.Stop()
 }
 
-// print welcome message
+// Welcome print welcome message
 func (app *App) Welcome() {
-	app.logger.Info("Starting otin-backend!")
+	app.logger.Info("Starting OTIN-backend!")
 	app.logger.Debugf("Version dump: %#v", app.Version)
 }

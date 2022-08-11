@@ -70,10 +70,10 @@ func (vInfo *Info) CheckCredentials(login string, password string) (bool, error)
 			return true, nil
 		}
 
-		return false, errors.New("Wrong password")
+		return false, errors.New("wrong password")
 	}
 
-	return false, errors.New("Wrong login")
+	return false, errors.New("wrong login")
 }
 
 func (vInfo *Info) GetUser(login string) (*info.TUser, error) {
@@ -169,10 +169,10 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 	default:
 	}
 
-	chout := make(chan info.TInfo, 100)
+	chOut := make(chan info.TInfo, 100)
 
 	go func() {
-		defer close(chout)
+		defer close(chOut)
 
 		iter := vInfo.rdb.Scan(ctx, 0, "*", 0).Iterator()
 		for iter.Next(ctx) {
@@ -191,7 +191,7 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 			select {
 			case <-ctx.Done():
 				return
-			case chout <- data:
+			case chOut <- data:
 			}
 		}
 
@@ -200,5 +200,5 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 		}
 	}()
 
-	return chout, nil
+	return chOut, nil
 }

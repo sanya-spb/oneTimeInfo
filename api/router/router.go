@@ -327,7 +327,7 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := rRouter.hHandler.Create(r.Context(), handler.TInfo(info))
+	id, err := rRouter.hHandler.CreateInfo(r.Context(), handler.TInfo(info))
 	if err != nil {
 		_ = render.Render(w, r, Err500(err))
 		return

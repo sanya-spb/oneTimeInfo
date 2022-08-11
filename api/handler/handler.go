@@ -29,22 +29,15 @@ type Token info.Token
 
 // TInfo - describes the stored secret unit of information
 type TInfo struct {
-	// UUID
-	FileID uuid.UUID `json:"id"`
-	// Name of the secret unit
-	Name string `json:"name"`
-	// Description of the secret unit
-	Descr string `json:"descr"`
-	// Size of secret unit
-	Size int `json:"size"`
-	// IsFile the flag indicates that this secret is a file
-	IsFile bool `json:"as_file"`
-	// date of creation secret unit
-	CreatedAt time.Time `json:"created_at"`
-	// date of expiration secret unit
-	DeleteAt time.Time `json:"delete_at"`
-	// The secret unit
-	DataBase64 string `json:"data"`
+	FileID     uuid.UUID `json:"id"`         // UUID
+	Name       string    `json:"name"`       // Name of the secret unit
+	Descr      string    `json:"descr"`      // Description of the secret unit
+	Size       int       `json:"size"`       // Size of secret unit
+	IsFile     bool      `json:"as_file"`    // IsFile the flag indicates that this secret is a file
+	CreatedAt  time.Time `json:"created_at"` // date of creation secret unit
+	DeleteAt   time.Time `json:"delete_at"`  // date of expiration secret unit
+	DataBase64 string    `json:"data"`       // The secret unit
+
 }
 
 // CheckCredentials checks if exist user with given login and password
@@ -77,13 +70,13 @@ func (hHandler *Handler) EncryptToken(token Token) (string, error) {
 }
 
 // DecryptToken convert encrypted string to Token struct
-func (hHandler *Handler) DecryptToken(cryptedTokenBase64 string) (*Token, error) {
-	cryptedToken, err := base64.StdEncoding.DecodeString(cryptedTokenBase64)
+func (hHandler *Handler) DecryptToken(encryptedTokenBase64 string) (*Token, error) {
+	encryptedToken, err := base64.StdEncoding.DecodeString(encryptedTokenBase64)
 	if err != nil {
 		return nil, fmt.Errorf("token format error: %s", err.Error())
 	}
 
-	decryptedToken, err := hHandler.info.DecryptStr(cryptedToken)
+	decryptedToken, err := hHandler.info.DecryptStr(encryptedToken)
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +97,8 @@ func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
 	return *vUser, err
 }
 
-// Create new secret
-func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, error) {
+// CreateInfo new secret
+func (hHandler *Handler) CreateInfo(ctx context.Context, hInfo TInfo) (uuid.UUID, error) {
 	data, err := base64.StdEncoding.DecodeString(hInfo.DataBase64)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("data format error: %s", err.Error())
@@ -130,6 +123,7 @@ func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, er
 	return id, nil
 }
 
+// StatInfo show information about secret
 func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID) (TInfo, error) {
 	vInfo, err := hHandler.info.StatInfo(ctx, fileID)
 	if err != nil {
@@ -154,6 +148,7 @@ func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID) (TInfo,
 	return hInfo, nil
 }
 
+// ReadInfo show secret
 func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID) (TInfo, error) {
 	vInfo, err := hHandler.info.ReadInfo(ctx, fileID)
 	if err != nil {
@@ -176,6 +171,7 @@ func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID) (TInfo,
 	}, nil
 }
 
+// ListInfo show information about all secrets
 func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
 	chIn, err := hHandler.info.ListInfo(ctx)
 	if err != nil {

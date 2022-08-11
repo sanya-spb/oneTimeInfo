@@ -72,22 +72,22 @@
             <form class="form-style-7" id="new-message-form">
                 <ul>
                     <li>
-                        <label class="required" for="data">Secret</label>
+                        <label class="required" for="new-message-form-data">Secret</label>
                         <textarea name="data" id="new-message-form-data" onkeyup="adjust_textarea(this)"></textarea>
                         <span>the contents of the secret message</span>
                     </li>
                     <li>
-                        <label class="required" for="descr">Description</label>
+                        <label class="required" for="new-message-form-descr">Description</label>
                         <textarea name="descr" id="new-message-form-descr" onkeyup="adjust_textarea(this)"></textarea>
                         <span>Description of secret</span>
                     </li>
                     <li>
-                        <label for="created_at">Created at</label>
+                        <label for="new-message-form-created_at">Created at</label>
                         <input type="datetime" name="created_at" id="new-message-form-created_at">
                         <span>Date and time when secret was created</span>
                     </li>
                     <li>
-                        <label for="delete_at">Delete at</label>
+                        <label for="new-message-form-delete_at">Delete at</label>
                         <input type="datetime" name="delete_at" id="new-message-form-delete_at">
                         <span>Date and time when secret will be deleted</span>
                     </li>
@@ -103,22 +103,22 @@
             <form class="form-style-7" id="new-file-form">
                 <ul>
                     <li>
-                        <label class="required" for="name">File</label>
+                        <label class="required" for="new-file-form-name">File</label>
                         <input type="file" name="name" id="new-file-form-name">
                         <span>Name of secret</span>
                     </li>
                     <li>
-                        <label class="required" for="descr">Description</label>
+                        <label class="required" for="new-file-form-descr">Description</label>
                         <textarea name="descr" id="new-file-form-descr" onkeyup="adjust_textarea(this)"></textarea>
                         <span>Description of secret</span>
                     </li>
                     <li>
-                        <label for="created_at">Created at</label>
+                        <label for="new-file-form-created_at">Created at</label>
                         <input type="datetime" name="created_at" id="new-file-form-created_at">
                         <span>Date and time when secret was created</span>
                     </li>
                     <li>
-                        <label for="delete_at">Delete at</label>
+                        <label for="new-file-form-delete_at">Delete at</label>
                         <input type="datetime" name="delete_at" id="new-file-form-delete_at">
                         <span>Date and time when secret will be deleted</span>
                     </li>
@@ -131,17 +131,17 @@
                 <h1>Accepted</h1>
                 <ul>
                     <li>
-                        <label for="link">link</label>
+                        <label for="new-form-result-link">link</label>
                         <input type="text" name="id" id="new-form-result-link" readonly>
                         <span>link</span>
                     </li>
                     <li>
-                        <label for="valid_from">Valid from</label>
+                        <label for="new-form-result-valid_from">Valid from</label>
                         <input type="datetime" name="valid_from" id="new-form-result-valid_from" readonly>
                         <span>Date and time when secret was created</span>
                     </li>
                     <li>
-                        <label for="valid_to">Valid to</label>
+                        <label for="new-form-result-valid_to">Valid to</label>
                         <input type="datetime" name="valid_to" id="new-form-result-valid_to" readonly>
                         <span>Date and time when secret will be deleted</span>
                     </li>
@@ -219,10 +219,10 @@
             // "as_file": false,
             "data": base64EncArr(strToUTF8Arr($("#new-message-form-data").val())),
         };
-        if ($("input[id='new-message-form-created_at']").val()!="") {
+        if ($("input[id='new-message-form-created_at']").val()!=="") {
             j["created_at"]=$("input[id='new-message-form-created_at']").val()
         }
-        if ($("input[id='new-message-form-delete_at']").val()!="") {
+        if ($("input[id='new-message-form-delete_at']").val()!=="") {
             j["delete_at"]=$("input[id='new-message-form-delete_at']").val()
         }
 
@@ -247,7 +247,7 @@
                 $("#new-form-result-valid_to").val(data.TokenData.valid_to)
             },
             error: function(xhr, status, error) {
-                if (xhr.status==401) {
+                if (xhr.status===401) {
                     showLoginModal()
                 } else {
                     var codeBlock = '<div class="modal">' +
@@ -273,10 +273,10 @@
                     "as_file": true,
                     "data": btoa(reader.result),
                 };
-                if ($("input[id='new-file-form-created_at']").val()!="") {
+                if ($("input[id='new-file-form-created_at']").val()!=="") {
                     j["created_at"]=$("input[id='new-file-form-created_at']").val()
                 }
-                if ($("input[id='new-file-form-delete_at']").val()!="") {
+                if ($("input[id='new-file-form-delete_at']").val()!=="") {
                     j["delete_at"]=$("input[id='new-file-form-delete_at']").val()
                 }
         
@@ -301,7 +301,7 @@
                         $("#new-form-result-valid_to").val(data.TokenData.valid_to)
                     },
                     error: function(xhr, status, error) {
-                        if (xhr.status==401) {
+                        if (xhr.status===401) {
                             showLoginModal()
                         } else {
                             var codeBlock = '<div class="modal">' +
@@ -331,7 +331,7 @@
                 $('#tableID').DataTable().clear().rows.add(data.data).draw();
             },
             error: function(xhr, status, error) {
-                if (xhr.status==401) {
+                if (xhr.status===401) {
                     showLoginModal()
                 } else {
                     var codeBlock = '<div class="modal">' +

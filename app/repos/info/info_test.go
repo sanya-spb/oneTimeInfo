@@ -65,9 +65,7 @@ func TestEncryptStr(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
-
 		decrypted, _ := ttInfo.DecryptStr(encrypted)
-
 		require.Equal(t, tt.out.str, decrypted)
 	}
 }
@@ -133,7 +131,6 @@ func TestDecryptStr(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
-
 		require.Equal(t, tt.out.str, decrypted)
 	}
 }
