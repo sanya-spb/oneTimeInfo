@@ -104,7 +104,7 @@ func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
 	return *vUser, err
 }
 
-// Create
+// Create new secret
 func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, error) {
 	data, err := base64.StdEncoding.DecodeString(hInfo.DataBase64)
 	if err != nil {
