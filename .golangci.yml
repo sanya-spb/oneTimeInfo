@@ -68,8 +68,9 @@ linters:
     - unused
     - varcheck
 #      Disabled by Default
+    - golint
 #      Fast, configurable, extensible, flexible, and beautiful linter for Go. Drop-in replacement of golint.
-    - revive
+#    - revive
 #      checks whether HTTP response body is closed successfully
     - bodyclose
 #      Provides diagnostics that check for bugs, performance and style issues.
