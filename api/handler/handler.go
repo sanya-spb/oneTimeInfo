@@ -27,17 +27,27 @@ func NewHandler(info *info.Info) *Handler {
 
 type Token info.Token
 
+// TInfo - describes the stored secret unit of information
 type TInfo struct {
-	FileID     uuid.UUID `json:"id"`
-	Name       string    `json:"name"`
-	Descr      string    `json:"descr"`
-	Size       int       `json:"size"`
-	IsFile     bool      `json:"as_file"`
-	CreatedAt  time.Time `json:"created_at"`
-	DeleteAt   time.Time `json:"delete_at"`
-	DataBase64 string    `json:"data"`
+	// UUID
+	FileID uuid.UUID `json:"id"`
+	// Name of the secret unit
+	Name string `json:"name"`
+	// Description of the secret unit
+	Descr string `json:"descr"`
+	// Size of secret unit
+	Size int `json:"size"`
+	// IsFile the flag indicates that this secret is a file
+	IsFile bool `json:"as_file"`
+	// date of creation secret unit
+	CreatedAt time.Time `json:"created_at"`
+	// date of expiration secret unit
+	DeleteAt time.Time `json:"delete_at"`
+	// The secret unit
+	DataBase64 string `json:"data"`
 }
 
+// CheckCredentials checks if exist user with given login and password
 func (hHandler *Handler) CheckCredentials(login, password string) bool {
 	ok, err := hHandler.info.CheckCredentials(login, password)
 	if err != nil {
@@ -51,13 +61,14 @@ func (hHandler *Handler) CheckCredentials(login, password string) bool {
 	return false
 }
 
+// EncryptToken convert Token struct to encrypted string
 func (hHandler *Handler) EncryptToken(token Token) (string, error) {
 	tokenJSON, err := json.Marshal(token)
 	if err != nil {
 		return "", fmt.Errorf("token serialization error: %s", err.Error())
 	}
 
-	encryptedToken, err := hHandler.info.EncryptStr([]byte(tokenJSON))
+	encryptedToken, err := hHandler.info.EncryptStr(tokenJSON)
 	if err != nil {
 		return "", err
 	}
@@ -65,6 +76,7 @@ func (hHandler *Handler) EncryptToken(token Token) (string, error) {
 	return base64.StdEncoding.EncodeToString(encryptedToken), nil
 }
 
+// DecryptToken convert encrypted string to Token struct
 func (hHandler *Handler) DecryptToken(cryptedTokenBase64 string) (*Token, error) {
 	cryptedToken, err := base64.StdEncoding.DecodeString(cryptedTokenBase64)
 	if err != nil {
@@ -86,11 +98,13 @@ func (hHandler *Handler) DecryptToken(cryptedTokenBase64 string) (*Token, error)
 	return &token, nil
 }
 
+// GetUser returns TUser struct for given `user`
 func (hHandler *Handler) GetUser(user string) (info.TUser, error) {
 	vUser, err := hHandler.info.GetUser(user)
 	return *vUser, err
 }
 
+// Create
 func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, error) {
 	data, err := base64.StdEncoding.DecodeString(hInfo.DataBase64)
 	if err != nil {
@@ -108,7 +122,7 @@ func (hHandler *Handler) Create(ctx context.Context, hInfo TInfo) (uuid.UUID, er
 		Data:      data,
 	}
 
-	id, err := hHandler.info.CreateInfo(ctx, info.TInfo(vInfo))
+	id, err := hHandler.info.CreateInfo(ctx, vInfo)
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("error when creating: %w", err)
 	}
@@ -163,25 +177,25 @@ func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID) (TInfo,
 }
 
 func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
-	chin, err := hHandler.info.ListInfo(ctx)
+	chIn, err := hHandler.info.ListInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	chout := make(chan TInfo, 100)
+	chOut := make(chan TInfo, 100)
 
 	go func() {
-		defer close(chout)
+		defer close(chOut)
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case vInfo, ok := <-chin:
+			case vInfo, ok := <-chIn:
 				if !ok {
 					return
 				}
-				chout <- TInfo{
+				chOut <- TInfo{
 					FileID:     vInfo.FileID,
 					Name:       vInfo.Name,
 					Descr:      vInfo.Descr,
@@ -195,5 +209,5 @@ func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
 		}
 	}()
 
-	return chout, nil
+	return chOut, nil
 }

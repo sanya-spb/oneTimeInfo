@@ -149,25 +149,25 @@ func (info *Info) ListInfo(ctx context.Context) (chan TInfo, error) {
 	return chout, nil
 }
 
-func (info *Info) EncryptStr(uncryptedStr []byte) ([]byte, error) {
+func (info *Info) EncryptStr(str []byte) ([]byte, error) {
 	var nonce [24]byte
 	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
 		return nil, fmt.Errorf("rand generator error: %s", err.Error())
 	}
 
-	return secretbox.Seal(nonce[:], uncryptedStr, &nonce, &info.secretKey), nil
+	return secretbox.Seal(nonce[:], str, &nonce, &info.secretKey), nil
 }
 
-func (info *Info) DecryptStr(cryptedStr []byte) ([]byte, error) {
-	if !(len(cryptedStr) > 24) {
+func (info *Info) DecryptStr(encryptedStr []byte) ([]byte, error) {
+	if !(len(encryptedStr) > 24) {
 		return nil, errors.New("data format error")
 	}
 
 	var nonce [24]byte
 
-	copy(nonce[:], cryptedStr[:24])
+	copy(nonce[:], encryptedStr[:24])
 
-	decrypted, ok := secretbox.Open(nil, cryptedStr[24:], &nonce, &info.secretKey)
+	decrypted, ok := secretbox.Open(nil, encryptedStr[24:], &nonce, &info.secretKey)
 	if !ok {
 		return nil, errors.New("data decryption error")
 	}
