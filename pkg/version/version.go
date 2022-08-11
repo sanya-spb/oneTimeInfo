@@ -9,7 +9,7 @@ type AppVersion struct {
 }
 
 // global variable for export to main
-var Version *AppVersion = new(AppVersion)
+var Version = new(AppVersion)
 
 // set vars from Makefile via go build -ldflags "-s -w -X ..."
 var (

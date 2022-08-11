@@ -27,8 +27,8 @@ type Router struct {
 
 const (
 	tokenStatusOk string = "ok"
-	adminGID             = 1
-	userGID              = 100
+	adminGID      uint   = 1
+	userGID       uint   = 100
 )
 
 type TInfo handler.TInfo
@@ -47,14 +47,19 @@ func (info *TInfo) Bind(r *http.Request) error {
 		return errors.New("missing required field: data")
 	}
 
-	if data, err := base64.StdEncoding.DecodeString(info.DataBase64); err != nil {
+	var (
+		data []byte
+		err  error
+	)
+
+	if data, err = base64.StdEncoding.DecodeString(info.DataBase64); err != nil {
 		return fmt.Errorf("data format error: %s", err)
+	}
+
+	if info.IsFile {
+		info.Size = len(data)
 	} else {
-		if info.IsFile {
-			info.Size = len(data)
-		} else {
-			info.Size = utf8.RuneCountInString(string(data))
-		}
+		info.Size = utf8.RuneCountInString(string(data))
 	}
 
 	if info.CreatedAt.IsZero() {
@@ -92,9 +97,12 @@ func NewRouter(hHandler *handler.Handler) *Router {
 
 	r.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"*"},
-		AllowedOrigins:   []string{"https://*", "http://*"},
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "DNT", "Host", "Origin", "Pragma", "Referer"},
+		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedMethods: []string{"GET", "POST"},
+		AllowedHeaders: []string{
+			"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection",
+			"DNT", "Host", "Origin", "Pragma", "Referer",
+		},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
@@ -129,8 +137,8 @@ func NewRouter(hHandler *handler.Handler) *Router {
 	})
 
 	r.Get("/ui/*", rRouter.ui)
-
 	rRouter.Handler = r
+
 	return rRouter
 }
 
@@ -138,6 +146,7 @@ func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(true)
+
 	if err := enc.Encode(v); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -181,6 +190,7 @@ func CredFromHeader(r *http.Request) string {
 	if len(cred) > 6 && strings.ToUpper(cred[0:5]) == "basic" {
 		return cred[6:]
 	}
+
 	return ""
 }
 
@@ -190,6 +200,7 @@ func TokenFromHeader(r *http.Request) string {
 	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
 		return bearer[7:]
 	}
+
 	return ""
 }
 
@@ -255,7 +266,7 @@ func (rRouter *Router) ui(w http.ResponseWriter, r *http.Request) {
 
 	url, err := r.URL.Parse(r.RequestURI)
 	if err != nil {
-		render.Render(w, r, Err500(err))
+		_ = render.Render(w, r, Err500(err))
 		return
 	}
 
@@ -289,7 +300,7 @@ func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 
 	tokenEncryptedBase64, err := rRouter.hHandler.EncryptToken(handler.Token(token))
 	if err != nil {
-		render.Render(w, r, Err500(err))
+		_ = render.Render(w, r, Err500(err))
 		return
 	}
 
@@ -312,19 +323,19 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 
 	info := TInfo{}
 	if err := render.Bind(r, &info); err != nil {
-		render.Render(w, r, Err400(err))
+		_ = render.Render(w, r, Err400(err))
 		return
 	}
 
 	id, err := rRouter.hHandler.Create(r.Context(), handler.TInfo(info))
 	if err != nil {
-		render.Render(w, r, Err500(err))
+		_ = render.Render(w, r, Err500(err))
 		return
 	}
 
 	vInfo, err := rRouter.hHandler.StatInfo(r.Context(), id)
 	if err != nil {
-		render.Render(w, r, Err500(err))
+		_ = render.Render(w, r, Err500(err))
 		return
 	}
 
@@ -338,7 +349,7 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 
 	tokenEncryptedBase64, err := rRouter.hHandler.EncryptToken(handler.Token(userToken))
 	if err != nil {
-		render.Render(w, r, Err500(err))
+		_ = render.Render(w, r, Err500(err))
 		return
 	}
 
@@ -360,34 +371,37 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 
 	chin, err := rRouter.hHandler.ListInfo(r.Context())
 	if err != nil {
-		render.Render(w, r, Err500(err))
+		_ = render.Render(w, r, Err500(err))
 		return
 	}
 
 	first := true
+
 	for {
 		select {
 		case <-r.Context().Done():
-			render.Render(w, r, Err500(err))
+			_ = render.Render(w, r, Err500(err))
 			return
 		case data, ok := <-chin:
 			if !ok {
 				if !first {
-					first = false
 					fmt.Fprintln(w, "]}")
 				}
+
 				return
 			}
+
 			if first {
 				first = false
+
 				fmt.Fprintln(w, "{ \"data\": [")
 			} else {
 				fmt.Fprintln(w, ",")
 			}
-			render.Render(w, r, TInfo(data))
+
+			_ = render.Render(w, r, TInfo(data))
 		}
 	}
-
 }
 
 func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
@@ -400,11 +414,13 @@ func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 
 	data, err := rRouter.hHandler.StatInfo(r.Context(), token.FileID)
 	if err != nil {
-		if errors.As(err, &handler.ErrInfoNotFound) {
-			render.Render(w, r, Err404(err))
+		if errors.Is(err, handler.ErrInfoNotFound) {
+			_ = render.Render(w, r, Err404(err))
 			return
 		}
-		render.Render(w, r, Err500(err))
+
+		_ = render.Render(w, r, Err500(err))
+
 		return
 	}
 
@@ -421,11 +437,13 @@ func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
 
 	data, err := rRouter.hHandler.ReadInfo(r.Context(), token.FileID)
 	if err != nil {
-		if errors.As(err, &handler.ErrInfoNotFound) {
-			render.Render(w, r, Err404(err))
+		if errors.Is(err, handler.ErrInfoNotFound) {
+			_ = render.Render(w, r, Err404(err))
 			return
 		}
-		render.Render(w, r, Err500(err))
+
+		_ = render.Render(w, r, Err500(err))
+
 		return
 	}
 

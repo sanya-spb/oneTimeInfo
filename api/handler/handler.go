@@ -21,6 +21,7 @@ func NewHandler(info *info.Info) *Handler {
 	r := &Handler{
 		info: info,
 	}
+
 	return r
 }
 
@@ -42,9 +43,11 @@ func (hHandler *Handler) CheckCredentials(login, password string) bool {
 	if err != nil {
 		return false
 	}
+
 	if ok {
 		return true
 	}
+
 	return false
 }
 
@@ -74,6 +77,7 @@ func (hHandler *Handler) DecryptToken(cryptedTokenBase64 string) (*Token, error)
 	}
 
 	var token Token
+
 	err = json.Unmarshal(decryptedToken, &token)
 	if err != nil {
 		return nil, fmt.Errorf("token deserialization error: %s", err.Error())
@@ -118,6 +122,7 @@ func (hHandler *Handler) StatInfo(ctx context.Context, fileID uuid.UUID) (TInfo,
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
 		}
+
 		return TInfo{}, fmt.Errorf("error when reading: %w", err)
 	}
 
@@ -141,6 +146,7 @@ func (hHandler *Handler) ReadInfo(ctx context.Context, fileID uuid.UUID) (TInfo,
 		if errors.Is(err, sql.ErrNoRows) {
 			return TInfo{}, ErrInfoNotFound
 		}
+
 		return TInfo{}, fmt.Errorf("error when deleting: %w", err)
 	}
 
@@ -161,10 +167,12 @@ func (hHandler *Handler) ListInfo(ctx context.Context) (chan TInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	chout := make(chan TInfo, 100)
 
 	go func() {
 		defer close(chout)
+
 		for {
 			select {
 			case <-ctx.Done():

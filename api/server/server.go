@@ -23,18 +23,23 @@ func NewServer(addr string, h http.Handler) *Server {
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 30 * time.Second,
 	}
+
 	return s
 }
 
 func (srv *Server) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	srv.httpServer.Shutdown(ctx)
+	_ = srv.httpServer.Shutdown(ctx)
+
 	cancel()
 }
 
 func (srv *Server) Start(info *info.Info) {
 	srv.info = info
-	go srv.httpServer.ListenAndServe()
+
+	go func() {
+		_ = srv.httpServer.ListenAndServe()
+	}()
 }
 
 func (srv *Server) Addr() string {

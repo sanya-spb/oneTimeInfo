@@ -15,7 +15,7 @@ import (
 	"github.com/sanya-spb/oneTimeInfo/internal/config"
 )
 
-var _ info.InfoStore = &Info{}
+var _ info.IStore = &Info{}
 
 type Info struct {
 	sync.RWMutex
@@ -40,7 +40,7 @@ func initUsers(adminLogin string, adminPasswd string) map[string]info.TUser {
 	}
 }
 
-func NewInfo(ctx context.Context, conf config.Config) *Info {
+func NewInfo(conf config.Config) *Info {
 	return &Info{
 		rdb: redis.NewClient(&redis.Options{
 			Addr:     conf.Store.Address + ":" + strconv.Itoa(int(conf.Store.Port)),
@@ -68,9 +68,9 @@ func (vInfo *Info) CheckCredentials(login string, password string) (bool, error)
 	if ok {
 		if v.Password == password {
 			return true, nil
-		} else {
-			return false, errors.New("Wrong password")
 		}
+
+		return false, errors.New("Wrong password")
 	}
 
 	return false, errors.New("Wrong login")
@@ -100,7 +100,7 @@ func (vInfo *Info) CreateInfo(ctx context.Context, data info.TInfo) (uuid.UUID, 
 		return uuid.UUID{}, err
 	}
 
-	err = vInfo.rdb.Set(ctx, data.FileID.String(), value, data.DeleteAt.Sub(time.Now())).Err()
+	err = vInfo.rdb.Set(ctx, data.FileID.String(), value, time.Until(data.DeleteAt)).Err()
 	if err != nil {
 		return uuid.UUID{}, err
 	}
@@ -119,8 +119,10 @@ func (vInfo *Info) ReadInfo(ctx context.Context, fileID uuid.UUID) (*info.TInfo,
 	if err != nil {
 		return nil, err
 	}
+
 	var data info.TInfo
 	err = json.Unmarshal([]byte(value), &data)
+
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +180,9 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 			if err != nil {
 				return
 			}
+
 			var data info.TInfo
+
 			err = json.Unmarshal([]byte(value), &data)
 			if err != nil {
 				return
@@ -190,6 +194,7 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 			case chout <- data:
 			}
 		}
+
 		if err := iter.Err(); err != nil {
 			return
 		}

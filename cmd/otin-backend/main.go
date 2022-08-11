@@ -18,17 +18,19 @@ import (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	log := logrus.New()
-	app, err := starter.NewApp(ctx, log)
+
+	app, err := starter.NewApp(log)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	app.Welcome()
 
-	vStore := store.NewInfo(ctx, app.Config)
+	vStore := store.NewInfo(app.Config)
 	if ok, err := vStore.Ping(ctx); !ok {
 		log.Fatal(err.Error())
 	}
+
 	vInfo := info.NewInfo(app.Config.SecretKey, vStore)
 	appHandler := handler.NewHandler(vInfo)
 	appRouter := router.NewRouter(appHandler)
@@ -38,6 +40,7 @@ func main() {
 	wg.Add(1)
 
 	log.Infof("listen at: %s", appServer.Addr())
+
 	go app.Serve(ctx, wg, appServer)
 
 	<-ctx.Done()

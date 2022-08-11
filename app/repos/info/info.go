@@ -39,7 +39,7 @@ type Token struct {
 	ValidTo   time.Time `json:"valid_to"`
 }
 
-type InfoStore interface {
+type IStore interface {
 	CreateInfo(ctx context.Context, data TInfo) (uuid.UUID, error)
 	ReadInfo(ctx context.Context, fileID uuid.UUID) (*TInfo, error)
 	DeleteInfo(ctx context.Context, fileID uuid.UUID) error
@@ -49,11 +49,11 @@ type InfoStore interface {
 }
 
 type Info struct {
-	store     InfoStore
+	store     IStore
 	secretKey [32]byte
 }
 
-func NewInfo(secretKey [32]byte, iStore InfoStore) *Info {
+func NewInfo(secretKey [32]byte, iStore IStore) *Info {
 	return &Info{
 		store:     iStore,
 		secretKey: secretKey,
@@ -113,6 +113,7 @@ func (info *Info) StatInfo(ctx context.Context, fileID uuid.UUID) (*TInfo, error
 	if err != nil {
 		return nil, fmt.Errorf("read data error: %w", err)
 	}
+
 	data.Data = nil
 
 	return data, nil
@@ -123,10 +124,12 @@ func (info *Info) ListInfo(ctx context.Context) (chan TInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	chout := make(chan TInfo, 100)
 
 	go func() {
 		defer close(chout)
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -135,7 +138,9 @@ func (info *Info) ListInfo(ctx context.Context) (chan TInfo, error) {
 				if !ok {
 					return
 				}
+
 				data.Data = nil
+
 				chout <- data
 			}
 		}
@@ -159,7 +164,9 @@ func (info *Info) DecryptStr(cryptedStr []byte) ([]byte, error) {
 	}
 
 	var nonce [24]byte
+
 	copy(nonce[:], cryptedStr[:24])
+
 	decrypted, ok := secretbox.Open(nil, cryptedStr[24:], &nonce, &info.secretKey)
 	if !ok {
 		return nil, errors.New("data decryption error")

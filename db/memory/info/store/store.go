@@ -11,7 +11,7 @@ import (
 	"github.com/sanya-spb/oneTimeInfo/internal/config"
 )
 
-var _ info.InfoStore = &Info{}
+var _ info.IStore = &Info{}
 
 type Info struct {
 	sync.RWMutex
@@ -36,34 +36,34 @@ func initUsers(adminLogin string, adminPasswd string) map[string]info.TUser {
 	}
 }
 
-func NewInfo(ctx context.Context, conf config.Config) *Info {
+func NewInfo(conf config.Config) *Info {
 	return &Info{
 		mInfo:  make(map[uuid.UUID]info.TInfo),
 		mUsers: initUsers(conf.Admin.Login, conf.Admin.Passwd),
 	}
 }
 
-func (info *Info) CheckCredentials(login string, password string) (bool, error) {
-	info.RLock()
-	defer info.RUnlock()
+func (vInfo *Info) CheckCredentials(login string, password string) (bool, error) {
+	vInfo.RLock()
+	defer vInfo.RUnlock()
 
-	v, ok := info.mUsers[login]
+	v, ok := vInfo.mUsers[login]
 	if ok {
 		if v.Password == password {
 			return true, nil
-		} else {
-			return false, errors.New("Wrong password")
 		}
+
+		return false, errors.New("Wrong password")
 	}
 
 	return false, errors.New("Wrong login")
 }
 
-func (info *Info) GetUser(login string) (*info.TUser, error) {
-	info.RLock()
-	defer info.RUnlock()
+func (vInfo *Info) GetUser(login string) (*info.TUser, error) {
+	vInfo.RLock()
+	defer vInfo.RUnlock()
 
-	v, ok := info.mUsers[login]
+	v, ok := vInfo.mUsers[login]
 	if ok {
 		return &v, nil
 	}
@@ -71,32 +71,32 @@ func (info *Info) GetUser(login string) (*info.TUser, error) {
 	return nil, sql.ErrNoRows
 }
 
-func (info *Info) CreateInfo(ctx context.Context, data info.TInfo) (uuid.UUID, error) {
+func (vInfo *Info) CreateInfo(ctx context.Context, data info.TInfo) (uuid.UUID, error) {
 	select {
 	case <-ctx.Done():
 		return uuid.UUID{}, ctx.Err()
 	default:
 	}
 
-	info.Lock()
-	defer info.Unlock()
+	vInfo.Lock()
+	defer vInfo.Unlock()
 
-	info.mInfo[data.FileID] = data
+	vInfo.mInfo[data.FileID] = data
 
 	return data.FileID, nil
 }
 
-func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID) (*info.TInfo, error) {
+func (vInfo *Info) ReadInfo(ctx context.Context, fileID uuid.UUID) (*info.TInfo, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
 	}
 
-	info.RLock()
-	defer info.RUnlock()
+	vInfo.RLock()
+	defer vInfo.RUnlock()
 
-	data, ok := info.mInfo[fileID]
+	data, ok := vInfo.mInfo[fileID]
 	if ok {
 		return &data, nil
 	}
@@ -104,35 +104,37 @@ func (info *Info) ReadInfo(ctx context.Context, fileID uuid.UUID) (*info.TInfo, 
 	return nil, sql.ErrNoRows
 }
 
-func (info *Info) DeleteInfo(ctx context.Context, fileID uuid.UUID) error {
+func (vInfo *Info) DeleteInfo(ctx context.Context, fileID uuid.UUID) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
 	}
 
-	_, ok := info.mInfo[fileID]
+	_, ok := vInfo.mInfo[fileID]
 	if ok {
-		delete(info.mInfo, fileID)
+		delete(vInfo.mInfo, fileID)
 		return nil
 	}
+
 	return sql.ErrNoRows
 }
 
-func (info *Info) IsExist(ctx context.Context, fileID uuid.UUID) (bool, error) {
+func (vInfo *Info) IsExist(ctx context.Context, fileID uuid.UUID) (bool, error) {
 	select {
 	case <-ctx.Done():
 		return false, ctx.Err()
 	default:
 	}
 
-	info.RLock()
-	defer info.RUnlock()
+	vInfo.RLock()
+	defer vInfo.RUnlock()
 
-	_, ok := info.mInfo[fileID]
+	_, ok := vInfo.mInfo[fileID]
 	if ok {
 		return true, nil
 	}
+
 	return false, nil
 }
 
@@ -157,7 +159,6 @@ func (vInfo *Info) ListInfo(ctx context.Context) (chan info.TInfo, error) {
 				return
 			case chout <- data:
 			}
-
 		}
 	}()
 
