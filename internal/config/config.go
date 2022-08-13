@@ -53,6 +53,7 @@ func (c *Config) loadConfFile(path string) error {
 		if f, err = os.Open(path); err != nil {
 			return err
 		}
+
 		defer func(f *os.File) {
 			_ = f.Close()
 		}(f)

@@ -36,7 +36,7 @@ type TInfo handler.TInfo
 type Token handler.Token
 
 // Bind need to help to bind getting json fields to struct
-func (info TInfo) Bind(r *http.Request) error {
+func (info *TInfo) Bind(r *http.Request) error {
 	if info.Name == "" {
 		return errors.New("missing required field: name")
 	}
