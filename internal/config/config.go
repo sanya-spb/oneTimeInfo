@@ -1,3 +1,4 @@
+// Package config implements work with the configuration environment
 package config
 
 import (
@@ -13,33 +14,35 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// configuration struct
+// Config - main configuration struct
 type Config struct {
-	ConfigFile      string
-	Debug           bool   `yaml:"debug"`
-	Listen          string `yaml:"listen"`
-	SecretKeyBase64 string `yaml:"secret_key"`
-	SecretKey       [32]byte
-	LogAccess       string `yaml:"log_access"`
-	LogErrors       string `yaml:"log_errors"`
-	Admin           AdminConfig
-	Store           StoreConfig
+	ConfigFile      string      `yaml:"-"`                    // path to config file
+	Debug           bool        `yaml:"debug,omitempty"`      // turn on debug mode
+	Listen          string      `yaml:"listen,omitempty"`     // listen port
+	SecretKeyBase64 string      `yaml:"secret_key"`           // secret key in base64 format
+	SecretKey       [32]byte    `yaml:"-"`                    // secret key
+	LogAccess       string      `yaml:"log_access,omitempty"` // access log file
+	LogErrors       string      `yaml:"log_errors,omitempty"` // error log file
+	Admin           AdminConfig `yaml:"admin"`                // admin credentials
+	Store           StoreConfig `yaml:"store"`                // DB connection params
 }
 
+// AdminConfig - credentials for administrative purposes
 type AdminConfig struct {
-	Login  string `yaml:"login"`
-	Passwd string `yaml:"passwd"`
+	Login  string `yaml:"login"`  // admin login
+	Passwd string `yaml:"passwd"` // admin password
 }
 
+// StoreConfig - parameters for connecting to the database
 type StoreConfig struct {
-	Address string `yaml:"address"`
-	Port    uint   `yaml:"port"`
-	User    string `yaml:"user"`
-	Passwd  string `yaml:"passwd"`
-	DBName  string `yaml:"db"`
+	Address string `yaml:"address,omitempty"` // DB ip
+	Port    uint   `yaml:"port,omitempty"`    // DB port
+	User    string `yaml:"user"`              // DB username
+	Passwd  string `yaml:"passwd"`            // DB password
+	DBName  string `yaml:"db,omitempty"`      // DB name or ID
 }
 
-// loading configuration parameters from a file
+// loadConfFile loading configuration parameters from a file
 func (c *Config) loadConfFile(path string) error {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		var (
@@ -50,7 +53,9 @@ func (c *Config) loadConfFile(path string) error {
 		if f, err = os.Open(path); err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func(f *os.File) {
+			_ = f.Close()
+		}(f)
 
 		switch ext := strings.ToLower(filepath.Ext(path)); ext {
 		case ".yaml", ".yml":
@@ -58,16 +63,16 @@ func (c *Config) loadConfFile(path string) error {
 				return err
 			}
 		default:
-			return errors.New("Unknown file format")
+			return errors.New("unknown file format")
 		}
 	} else {
-		return errors.New("The configuration file is missing")
+		return errors.New("the configuration file is missing")
 	}
 
 	return nil
 }
 
-// Init config
+// NewConfig initialization configuration
 func NewConfig(log *logrus.Logger) *Config {
 	var result = new(Config)
 
@@ -110,16 +115,16 @@ func NewConfig(log *logrus.Logger) *Config {
 		log.Fatalf("secretKey format error: %s", err.Error())
 	}
 
-	copy(result.SecretKey[:], secretKeyBytes)
-
-	if len(result.SecretKey) != 32 {
+	if len(secretKeyBytes) != 32 {
 		log.Fatal(errors.New("secretKey length error"))
 	}
+
+	copy(result.SecretKey[:], secretKeyBytes)
 
 	return result
 }
 
-// Get uint value from ENV
+// GetEnvUInt64 get uint value from ENV
 func GetEnvUInt64(key string, defaultVal uint64) uint64 {
 	if envVal, ok := os.LookupEnv(key); ok {
 		if envBool, err := strconv.ParseUint(envVal, 10, 64); err == nil {
@@ -130,7 +135,7 @@ func GetEnvUInt64(key string, defaultVal uint64) uint64 {
 	return defaultVal
 }
 
-// Get string value from ENV
+// GetEnv get string value from ENV
 func GetEnv(key string, defaultVal string) string {
 	if envVal, ok := os.LookupEnv(key); ok {
 		return envVal
@@ -139,7 +144,7 @@ func GetEnv(key string, defaultVal string) string {
 	return defaultVal
 }
 
-// Get bool value from ENV
+// GetEnvBool get bool value from ENV
 func GetEnvBool(key string, defaultVal bool) bool {
 	if envVal, ok := os.LookupEnv(key); ok {
 		if envBool, err := strconv.ParseBool(envVal); err == nil {

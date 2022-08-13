@@ -81,7 +81,7 @@ linters:
     - lll
 #      Whitespace Linter - Forces you to use empty lines!
     - wsl
-#      Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification
+#      Gofmt checks whether code was gofmt-ed. By default, this tool runs with -s option to check for code simplification
     - gofmt
 #      Reports unused function parameters
     - unparam

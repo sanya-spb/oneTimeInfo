@@ -20,7 +20,7 @@ func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// 400 Bad Request
+// Err400 return 400 Bad Request
 func Err400(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -30,7 +30,7 @@ func Err400(err error) render.Renderer {
 	}
 }
 
-// 401 Unauthorized
+// Err401 return 401 Unauthorized
 func Err401(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -40,7 +40,7 @@ func Err401(err error) render.Renderer {
 	}
 }
 
-// 403 Forbidden
+// Err403 return 403 Forbidden
 func Err403(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -50,7 +50,7 @@ func Err403(err error) render.Renderer {
 	}
 }
 
-// 404 Not Found
+// Err404 return 404 Not Found
 func Err404(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -60,7 +60,7 @@ func Err404(err error) render.Renderer {
 	}
 }
 
-// 405 Method Not Allowed
+// Err405 return 405 Method Not Allowed
 func Err405(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -70,7 +70,7 @@ func Err405(err error) render.Renderer {
 	}
 }
 
-// 409 Conflict
+// Err409 return 409 Conflict
 func Err409(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -80,7 +80,7 @@ func Err409(err error) render.Renderer {
 	}
 }
 
-// 500 Internal Server Error
+// Err500 return 500 Internal Server Error
 func Err500(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
@@ -90,7 +90,7 @@ func Err500(err error) render.Renderer {
 	}
 }
 
-// 501 Not Implemented
+// Err501 return 501 Not Implemented
 func Err501(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,

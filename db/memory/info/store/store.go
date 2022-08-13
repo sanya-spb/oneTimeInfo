@@ -53,10 +53,10 @@ func (vInfo *Info) CheckCredentials(login string, password string) (bool, error)
 			return true, nil
 		}
 
-		return false, errors.New("Wrong password")
+		return false, errors.New("wrong password")
 	}
 
-	return false, errors.New("Wrong login")
+	return false, errors.New("wrong login")
 }
 
 func (vInfo *Info) GetUser(login string) (*info.TUser, error) {

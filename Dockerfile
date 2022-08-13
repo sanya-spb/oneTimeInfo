@@ -6,6 +6,8 @@ COPY . .
 RUN go mod download
 
 ARG PROJECT=github.com/sanya-spb/oneTimeInfo
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 ARG RELEASE=
 ARG COMMIT=
 ARG BUILD_TIME=

@@ -1,6 +1,7 @@
+// Package version helps to set vars from env on build stage
 package version
 
-// everything we need to know about our app
+// AppVersion - is everything we need to know about our app
 type AppVersion struct {
 	Version   string
 	Commit    string

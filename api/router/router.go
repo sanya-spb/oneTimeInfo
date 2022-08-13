@@ -1,3 +1,4 @@
+// Package router to handle our routing
 package router
 
 import (
@@ -34,7 +35,8 @@ const (
 type TInfo handler.TInfo
 type Token handler.Token
 
-func (info *TInfo) Bind(r *http.Request) error {
+// Bind need to help to bind getting json fields to struct
+func (info TInfo) Bind(r *http.Request) error {
 	if info.Name == "" {
 		return errors.New("missing required field: name")
 	}
@@ -73,10 +75,12 @@ func (info *TInfo) Bind(r *http.Request) error {
 	return nil
 }
 
+// Render need for duck typing
 func (info TInfo) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// NewRouter init router
 func NewRouter(hHandler *handler.Handler) *Router {
 	rRouter := &Router{
 		hHandler: hHandler,
@@ -96,7 +100,6 @@ func NewRouter(hHandler *handler.Handler) *Router {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Use(cors.Handler(cors.Options{
-		// AllowedOrigins:   []string{"*"},
 		AllowedOrigins: []string{"https://*", "http://*"},
 		AllowedMethods: []string{"GET", "POST"},
 		AllowedHeaders: []string{
@@ -142,6 +145,7 @@ func NewRouter(hHandler *handler.Handler) *Router {
 	return rRouter
 }
 
+// renderJSON render json answer in http response
 func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
@@ -157,6 +161,7 @@ func renderJSON(w http.ResponseWriter, v interface{}, statusCode int) {
 	_, _ = w.Write(buf.Bytes())
 }
 
+// CheckAuthBasic checks credentials of basic auth
 func (rRouter *Router) CheckAuthBasic(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		Status string `json:"status"`
@@ -178,13 +183,14 @@ func (rRouter *Router) CheckAuthBasic(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, result, http.StatusOK)
 }
 
+// CheckAuthBearer checks token
 func (rRouter *Router) CheckAuthBearer(w http.ResponseWriter, r *http.Request) {
 	token, _ := rRouter.hHandler.DecryptToken(TokenFromHeader(r))
 
 	renderJSON(w, token, http.StatusOK)
 }
 
-// Get user from authorization header.
+// CredFromHeader get user from authorization header.
 func CredFromHeader(r *http.Request) string {
 	cred := r.Header.Get("Authorization")
 	if len(cred) > 6 && strings.ToUpper(cred[0:5]) == "basic" {
@@ -194,7 +200,7 @@ func CredFromHeader(r *http.Request) string {
 	return ""
 }
 
-// Get token from authorization header.
+// TokenFromHeader get token from authorization header.
 func TokenFromHeader(r *http.Request) string {
 	bearer := r.Header.Get("Authorization")
 	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
@@ -204,6 +210,7 @@ func TokenFromHeader(r *http.Request) string {
 	return ""
 }
 
+// BearerAuthentication implement bearer authentication (by token)
 func (rRouter *Router) BearerAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bearer := TokenFromHeader(r)
@@ -238,6 +245,7 @@ func (rRouter *Router) BearerAuthentication(next http.Handler) http.Handler {
 	})
 }
 
+// BasicAuthentication implement basic authentication
 func (rRouter *Router) BasicAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, pass, ok := r.BasicAuth()
@@ -260,6 +268,7 @@ func (rRouter *Router) BasicAuthentication(next http.Handler) http.Handler {
 	})
 }
 
+// ui implement file server
 func (rRouter *Router) ui(w http.ResponseWriter, r *http.Request) {
 	root := "./data"
 	fs := http.FileServer(http.Dir(root))
@@ -277,6 +286,7 @@ func (rRouter *Router) ui(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Token return token
 func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		Token string `json:"token"`
@@ -307,6 +317,7 @@ func (rRouter *Router) Token(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, TResult{Token: tokenEncryptedBase64}, http.StatusOK)
 }
 
+// CreateInfo implement creation new secret
 func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 	type TResult struct {
 		Status    string `json:"status"`
@@ -361,6 +372,7 @@ func (rRouter *Router) CreateInfo(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, result, http.StatusCreated)
 }
 
+// ListInfo implement listing of all secrets
 func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 	token, _ := rRouter.hHandler.DecryptToken(TokenFromHeader(r))
 
@@ -385,7 +397,7 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 		case data, ok := <-chin:
 			if !ok {
 				if !first {
-					fmt.Fprintln(w, "]}")
+					_, _ = fmt.Fprintln(w, "]}")
 				}
 
 				return
@@ -394,9 +406,9 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 			if first {
 				first = false
 
-				fmt.Fprintln(w, "{ \"data\": [")
+				_, _ = fmt.Fprintln(w, "{ \"data\": [")
 			} else {
-				fmt.Fprintln(w, ",")
+				_, _ = fmt.Fprintln(w, ",")
 			}
 
 			_ = render.Render(w, r, TInfo(data))
@@ -404,6 +416,7 @@ func (rRouter *Router) ListInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// StatInfo implement get information about secret
 func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 	token, _ := rRouter.hHandler.DecryptToken(TokenFromHeader(r))
 
@@ -427,6 +440,7 @@ func (rRouter *Router) StatInfo(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, TInfo(data), http.StatusOK)
 }
 
+// ReadInfo implement getting secret
 func (rRouter *Router) ReadInfo(w http.ResponseWriter, r *http.Request) {
 	token, _ := rRouter.hHandler.DecryptToken(TokenFromHeader(r))
 

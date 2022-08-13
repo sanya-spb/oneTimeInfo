@@ -1,3 +1,5 @@
+// Package info contains all our model definition which in this case is our job
+// model. Business logic is also implemented here.
 package info
 
 import (

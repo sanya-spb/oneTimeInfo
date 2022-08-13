@@ -1,3 +1,4 @@
+// Package handler has all the handlers(controllers) we want to hook to our routes
 package handler
 
 import (

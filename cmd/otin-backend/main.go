@@ -1,3 +1,4 @@
+// This is our entry point where we shall serve OTIN backend application from.
 package main
 
 import (

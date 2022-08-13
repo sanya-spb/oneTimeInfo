@@ -1,3 +1,5 @@
+// Package store contains the implementation of interaction with the data
+// warehouse
 package store
 
 import (
